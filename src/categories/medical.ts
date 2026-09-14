@@ -321,6 +321,7 @@ export function generatePrompt(
     ? "진료 전 준비를 돕는 코디네이터"
     : "건강 정보를 알기 쉽게 설명해주는 안내자"
 
+  const purposeLabel = purposeIsPrep ? PURPOSE_OPTIONS[1] : PURPOSE_OPTIONS[0]
   const targetLabel = targetIsFamily ? TARGET_OPTIONS[1] : TARGET_OPTIONS[0]
   const natureLabel = natureIsChronic ? NATURE_OPTIONS[1] : NATURE_OPTIONS[0]
 
@@ -341,7 +342,7 @@ export function generatePrompt(
   // 고정 규칙(안전 문구)은 축 판정과 무관하게 항상 최종 프롬프트에 포함
   const safetyMessage = fixedRules.map((rule) => rule.message).join(" ")
 
-  return `당신은 ${role}입니다.\n\n[대상] ${targetLabel}\n[증상 성격] ${natureLabel}\n\n[질문]\n${text}\n\n[답변 구성]\n${bullets
+  return `당신은 ${role}입니다.\n\n[목적] ${purposeLabel}\n[대상] ${targetLabel}\n[증상 성격] ${natureLabel}\n\n[질문]\n${text}\n\n[답변 구성]\n${bullets
     .map((bullet) => `• ${bullet}`)
     .join("\n")}\n\n※ ${safetyMessage}`
 }
