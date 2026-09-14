@@ -5,6 +5,12 @@
 
 import type { Category, FixedRule } from "./types"
 
+// 축 옵션 라벨(순서 고정) — category.axes UI와 detectAxes/generatePrompt가 이 값을
+// 공유해서 오타로 인한 불일치를 막는다. (의료질문 모듈과 동일한 패턴)
+const AXIS1_OPTIONS = ["연애", "인간관계", "학업", "진로", "가족", "자존감"] as const
+const AXIS2_OPTIONS_DISPLAY = ["완전 공감형", "균형형", "직설·해결형"] as const
+const AXIS3_OPTIONS_DISPLAY = ["질문으로 유도", "직접 조언 제시"] as const
+
 export const category: Category = {
   id: "counseling",
   name: "개인상담",
@@ -15,8 +21,11 @@ export const category: Category = {
     "요즘 직장에서 상사 때문에 너무 힘들어요. 어떻게 해야 할지 모르겠어요.",
   example:
     "친구랑 크게 싸웠는데 제가 잘못한 건지 모르겠고, 어떻게 화해해야 할지도 모르겠어요.",
-  // 축1~3은 텍스트에서 자동 감지하므로 수동 드롭다운은 두지 않는다.
-  axes: [],
+  axes: [
+    { id: "topic", label: "상담 주제", options: [...AXIS1_OPTIONS] },
+    { id: "style", label: "상담 스타일", options: [...AXIS2_OPTIONS_DISPLAY] },
+    { id: "intervention", label: "개입 방식", options: [...AXIS3_OPTIONS_DISPLAY] },
+  ],
   hashtags: [
     {
       tag: "#연애",
@@ -154,14 +163,7 @@ const AXIS1_DEFS: Record<Axis1Topic, Axis1Def> = {
   },
 }
 
-const AXIS1_TOPIC_ORDER: Axis1Topic[] = [
-  "연애",
-  "인간관계",
-  "학업",
-  "진로",
-  "가족",
-  "자존감",
-]
+const AXIS1_TOPIC_ORDER: Axis1Topic[] = [...AXIS1_OPTIONS]
 
 const AXIS1_DEFAULT: Axis1Topic = "인간관계"
 
@@ -393,6 +395,32 @@ const AXIS3_EFFECTS: Record<Axis3Mode, string> = {
   직접조언: "상황을 분석해 구체적이고 실행 가능한 방향을 바로 제시하세요.",
 }
 
+// 내부 타입(공백 없음) ↔ UI/축 표시 라벨(prd 표기 그대로, 공백·가운뎃점 포함) 매핑.
+// category.axes[].options·detectAxes 반환값은 표시 라벨을, generatePrompt 내부 로직은
+// 내부 타입을 쓰므로 양방향 변환이 필요하다.
+const AXIS2_DISPLAY: Record<Axis2Style, (typeof AXIS2_OPTIONS_DISPLAY)[number]> = {
+  완전공감형: "완전 공감형",
+  균형형: "균형형",
+  직설해결형: "직설·해결형",
+}
+const AXIS2_FROM_DISPLAY: Record<string, Axis2Style> = Object.fromEntries(
+  (Object.entries(AXIS2_DISPLAY) as [Axis2Style, string][]).map(([internal, display]) => [
+    display,
+    internal,
+  ]),
+)
+
+const AXIS3_DISPLAY: Record<Axis3Mode, (typeof AXIS3_OPTIONS_DISPLAY)[number]> = {
+  질문유도: "질문으로 유도",
+  직접조언: "직접 조언 제시",
+}
+const AXIS3_FROM_DISPLAY: Record<string, Axis3Mode> = Object.fromEntries(
+  (Object.entries(AXIS3_DISPLAY) as [Axis3Mode, string][]).map(([internal, display]) => [
+    display,
+    internal,
+  ]),
+)
+
 // 축2·축3 공통: 옵션들의 키워드 중 텍스트에서 가장 나중에 등장한 것이 채택된다.
 function detectLastOccurring<T extends string>(
   text: string,
@@ -424,15 +452,32 @@ function detectAxis3(text: string): Axis3Mode {
   return detectLastOccurring(text, AXIS3_OPTIONS, "직접조언")
 }
 
-// TODO(이재성): axes 인자는 시그니처 호환/향후 수동 오버라이드용으로 남겨둔다.
-// 지금은 축1~3 전부 text에서만 자동 감지하고 axes는 사용하지 않는다.
+// 자동 감지 — 페이지2 진입 시 이 결과로 축 버튼 초기 상태를 채운다(ComparePage에서 호출).
+// 반환값은 category.axes[].options에 있는 라벨 문자열 그대로다.
+export function detectAxes(text: string): Record<string, string> {
+  const topic = detectAxis1(text)
+  const style = detectAxis2(text)
+  const mode = detectAxis3(text)
+  return {
+    topic,
+    style: AXIS2_DISPLAY[style],
+    intervention: AXIS3_DISPLAY[mode],
+  }
+}
+
+// axes는 이미 확정된 축 값이다(detectAxes로 자동 채워졌거나, 사용자가 페이지2에서
+// 버튼을 눌러 직접 override한 값) — 여기서는 텍스트를 다시 감지하지 않고 그 값을
+// 그대로 문장 조립에 쓴다.
 export function generatePrompt(
   text: string,
   axes: Record<string, string>,
 ): string {
-  const topic = detectAxis1(text)
-  const style = detectAxis2(text)
-  const mode = detectAxis3(text)
+  const topic: Axis1Topic =
+    axes["topic"] && axes["topic"] in AXIS1_DEFS
+      ? (axes["topic"] as Axis1Topic)
+      : AXIS1_DEFAULT
+  const style: Axis2Style = AXIS2_FROM_DISPLAY[axes["style"]] ?? "균형형"
+  const mode: Axis3Mode = AXIS3_FROM_DISPLAY[axes["intervention"]] ?? "직접조언"
 
   const persona = AXIS1_DEFS[topic]
 
