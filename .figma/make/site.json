@@ -1,4 +1,6 @@
 {
+  "title": "알잘딱",
+  "language": "ko",
   "description": "An AI prompt assistant designed for non-experts and seniors, simplifying the process of generating and refining prompts through an intuitive interface.",
   "robots": {
     "index": false
