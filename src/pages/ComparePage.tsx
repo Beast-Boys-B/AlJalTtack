@@ -43,6 +43,7 @@ export function ComparePage({
   const [copySuccess, setCopySuccess] = useState(false)
   const [adjustCount, setAdjustCount] = useState(0)
   const [showHelpCard, setShowHelpCard] = useState(false)
+  const [feedbackThanks, setFeedbackThanks] = useState(false)
 
   // Axis highlight system
   const [highlights, setHighlights] = useState<HighlightEntry[]>([])
@@ -147,6 +148,19 @@ export function ComparePage({
     setHasCopied(true)
     setCopySuccess(true)
     setTimeout(() => setCopySuccess(false), 2200)
+  }
+
+  const sendFeedback = (rating: "up" | "down") => {
+    fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category: category.id, axisValues: axes, rating, text: leftText }),
+    })
+      .then(() => {
+        setFeedbackThanks(true)
+        setTimeout(() => setFeedbackThanks(false), 2200)
+      })
+      .catch(() => {})
   }
 
   const SERVICES = [
@@ -628,12 +642,13 @@ export function ComparePage({
               >
                 결과가 마음에 드시나요?
               </span>
-              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
                 <button
                   className="btn-arcade"
                   onClick={() => {
                     if (soundEnabled) playArcadeSound("coin")
                     addScore(100)
+                    sendFeedback("up")
                   }}
                   style={{
                     background: "#fff",
@@ -652,6 +667,7 @@ export function ComparePage({
                   className="btn-arcade"
                   onClick={() => {
                     if (soundEnabled) playArcadeSound("select")
+                    sendFeedback("down")
                   }}
                   style={{
                     background: "#fff",
@@ -666,6 +682,11 @@ export function ComparePage({
                 >
                   👎
                 </button>
+                {feedbackThanks && (
+                  <span style={{ fontSize: 12.5, color: "#666", whiteSpace: "nowrap" }}>
+                    소중한 의견 감사합니다
+                  </span>
+                )}
               </div>
             </div>
           </div>
