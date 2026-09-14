@@ -1,0 +1,196 @@
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;600;700;800;900&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap');
+
+@font-face {
+  font-family: 'GyeonggiTitle';
+  src: url('https://cdn.jsdelivr.net/gh/fonts-archive/GyeonggiTitle/GyeonggiTitle-Medium.woff2') format('woff2'),
+       url('https://cdn.jsdelivr.net/gh/fonts-archive/GyeonggiTitle/GyeonggiTitle-Medium.woff') format('woff');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'GyeonggiTitle';
+  src: url('https://cdn.jsdelivr.net/gh/fonts-archive/GyeonggiTitle/GyeonggiTitle-Bold.woff2') format('woff2'),
+       url('https://cdn.jsdelivr.net/gh/fonts-archive/GyeonggiTitle/GyeonggiTitle-Bold.woff') format('woff');
+  font-weight: 700;
+  font-display: swap;
+}
+@import 'tailwindcss';
+
+@theme {
+  --color-lime: #CCFF00;
+  --color-ink: #111111;
+  --color-ivory: #FAFAF8;
+  --color-soft: #F2F2EF;
+  --color-muted: #888888;
+  --color-border: #E0E0DC;
+  --font-display: 'Black Han Sans', 'Noto Sans KR', sans-serif;
+  --font-body: 'Noto Sans KR', sans-serif;
+  --font-pixel: 'Silkscreen', 'Press Start 2P', monospace;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background-color: #FAFAF8;
+  color: #111111;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* CRT Scanlines Overlay */
+.crt-overlay {
+  position: relative;
+}
+.crt-overlay::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%);
+  background-size: 100% 4px;
+  z-index: 99;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Retro Arcade Grid Ground */
+.arcade-grid {
+  background-image: 
+    linear-gradient(to right, rgba(17, 17, 17, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(17, 17, 17, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Arcade Cabinet Bezel Shadow */
+.arcade-cabinet {
+  border: 3px solid #111;
+  box-shadow: 6px 6px 0 shadow-black, inset -2px -2px 0 rgba(0,0,0,0.1);
+}
+
+.arcade-card-shadow {
+  box-shadow: 4px 4px 0 shadow-black, 0 8px 24px rgba(0,0,0,0.06);
+}
+
+/* Pixel Font Utility */
+.font-pixel {
+  font-family: 'Silkscreen', cursive, monospace;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-lime {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(204, 255, 0, 0.5), 3px 3px 0 rgba(17,17,17,0.28); }
+  50%       { box-shadow: 0 0 0 10px rgba(204, 255, 0, 0), 3px 3px 0 rgba(17,17,17,0.28); }
+}
+
+@keyframes coinFlash {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(204,255,0,0.8)); }
+  50% { filter: drop-shadow(0 0 20px rgba(204,255,0,1)); }
+}
+
+.animate-fade-up   { animation: fadeUp 0.4s ease-out both; }
+.animate-fade-in   { animation: fadeIn 0.3s ease-out both; }
+.animate-slide-in  { animation: slideInRight 0.4s ease-out both; }
+.animate-spin      { animation: spin 0.8s linear infinite; }
+.blink             { animation: blink 0.8s step-end infinite; }
+.pulse-lime        { animation: pulse-lime 2s ease-in-out infinite; }
+.coin-flash        { animation: coinFlash 1.5s infinite; }
+
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* Retro Tactile Button Style */
+.btn-arcade {
+  transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 3px 3px 0 rgba(17,17,17,0.28);
+  border: 2px solid #111;
+}
+.btn-arcade:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 rgba(17,17,17,0.28);
+}
+.btn-arcade:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 rgba(17,17,17,0.28);
+}
+
+.btn-bounce {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-bounce:hover  { transform: scale(1.03) translateY(-1px); }
+.btn-bounce:active { transform: scale(0.97) translateY(1px); }
+
+.pill-btn {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.12s ease, box-shadow 0.12s ease;
+}
+.pill-btn:hover { transform: translateY(-2px); }
+.pill-btn:active { transform: translateY(1px); }
+
+/* Responsive Mobile Layout Adjustments */
+@media (max-width: 1024px) {
+  .hero-grid {
+    grid-template-columns: 1fr !important;
+    padding: 40px 20px !important;
+    gap: 36px !important;
+    min-height: auto !important;
+  }
+  .compare-grid {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .compare-left, .compare-right, .compare-sidebar {
+    border-right: none !important;
+    border-bottom: 2px solid #111 !important;
+    width: 100% !important;
+  }
+  .section-padding {
+    padding: 50px 20px !important;
+  }
+  .grid-3col {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .grid-5col {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+  .hero-title {
+    font-size: 56px !important;
+  }
+  .hero-subtitle {
+    font-size: 18px !important;
+  }
+  .animated-demo-container {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
