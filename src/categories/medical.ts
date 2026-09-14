@@ -20,9 +20,24 @@ export const category: Category = {
   placeholder: "머리가 자주 아픈데 어떤 이유일 수 있나요? 병원은 어디 가야 하나요?",
   example: "두통이 일주일째 계속되는데 원인이 뭘까요. 어떤 병원에 가야 하나요?",
   axes: [
-    { id: "purpose", label: "목적", options: [...PURPOSE_OPTIONS] },
-    { id: "target", label: "대상", options: [...TARGET_OPTIONS] },
-    { id: "nature", label: "증상 성격", options: [...NATURE_OPTIONS] },
+    {
+      id: "purpose",
+      label: "목적",
+      options: [...PURPOSE_OPTIONS],
+      hint: "'병원 가기 전 문진 준비하기'를 고르면 원인 설명 대신 의사에게 물어볼 질문 목록과 준비물 위주로 답변이 바뀌어요.",
+    },
+    {
+      id: "target",
+      label: "대상",
+      options: [...TARGET_OPTIONS],
+      hint: "'가족/보호 대상자'를 고르면 질문 대상이 본인이 아니라 돌보는 가족이라는 걸 AI에게 명확히 알려줘요.",
+    },
+    {
+      id: "nature",
+      label: "증상 성격",
+      options: [...NATURE_OPTIONS],
+      hint: "'오래된/만성 증상'을 고르면 오래 지속된 증상이라는 맥락으로 답변 방향을 맞춰줘요.",
+    },
   ],
   hashtags: [
     {

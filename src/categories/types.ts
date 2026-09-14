@@ -9,6 +9,10 @@ export interface Axis {
   id: string
   label: string
   options: string[]
+  // 재조정 3회 누적 시 뜨는 힌트 카드(F-공21 인접 UI)용 안내 문구 — "이 축을
+  // 조정하면 결과가 실제로 어떻게 달라지는지" 구체적 예시. generatePrompt의
+  // 실제 분기 로직과 일치해야 한다(지어낸 효과 아님).
+  hint?: string
 }
 
 export interface Category {

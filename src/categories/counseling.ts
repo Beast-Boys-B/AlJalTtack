@@ -22,9 +22,24 @@ export const category: Category = {
   example:
     "친구랑 크게 싸웠는데 제가 잘못한 건지 모르겠고, 어떻게 화해해야 할지도 모르겠어요.",
   axes: [
-    { id: "topic", label: "상담 주제", options: [...AXIS1_OPTIONS] },
-    { id: "style", label: "상담 스타일", options: [...AXIS2_OPTIONS_DISPLAY] },
-    { id: "intervention", label: "개입 방식", options: [...AXIS3_OPTIONS_DISPLAY] },
+    {
+      id: "topic",
+      label: "상담 주제",
+      options: [...AXIS1_OPTIONS],
+      hint: "상담 주제에 따라 AI가 연기하는 페르소나 자체가 달라져요 — 예를 들어 '연애'는 또래 친구처럼 반말로, '학업'은 친한 선생님처럼 존댓말로 답해요.",
+    },
+    {
+      id: "style",
+      label: "상담 스타일",
+      options: [...AXIS2_OPTIONS_DISPLAY],
+      hint: "'완전 공감형'은 조언 없이 길게 공감만, '직설·해결형'은 위로를 최소화하고 짧고 핵심 조언 위주로 답변 분량과 톤이 달라져요.",
+    },
+    {
+      id: "intervention",
+      label: "개입 방식",
+      options: [...AXIS3_OPTIONS_DISPLAY],
+      hint: "'질문으로 유도'는 결론 대신 스스로 생각하게 질문을 던지고, '직접 조언 제시'는 바로 구체적인 방향을 제시해요.",
+    },
   ],
   hashtags: [
     {

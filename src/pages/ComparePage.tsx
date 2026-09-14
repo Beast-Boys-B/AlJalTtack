@@ -9,6 +9,16 @@ import {
 import { playArcadeSound } from "../lib/sound"
 import { renderHighlightedText, type HighlightEntry } from "../lib/highlight"
 
+// "어떤 점이 어려우셨나요?" 설문 선택지(F-공21) — 팀이 아직 확정한 문구가
+// 아니라 Claude 제안 임시안. api/survey.ts의 ALLOWED_REASONS와 반드시 동일하게 유지.
+const SURVEY_REASONS = [
+  "원하는 톤·분위기가 안 나와요",
+  "핵심 내용이 자꾸 빠져요",
+  "축(옵션) 의미가 헷갈려요",
+  "결과가 너무 길거나 짧아요",
+  "기타",
+]
+
 export function ComparePage({
   inputText,
   category,
@@ -45,6 +55,10 @@ export function ComparePage({
   const [showHelpCard, setShowHelpCard] = useState(false)
   const [feedbackGiven, setFeedbackGiven] = useState<"up" | "down" | null>(null)
   const [feedbackThanks, setFeedbackThanks] = useState(false)
+
+  // 재조정 3회 누적 시 힌트 카드와 함께 뜨는 객관식 설문(F-공21/P-공24/R-공25)
+  const [showSurveyCard, setShowSurveyCard] = useState(false)
+  const [surveyReason, setSurveyReason] = useState<string | null>(null)
 
   // Axis highlight system
   const [highlights, setHighlights] = useState<HighlightEntry[]>([])
@@ -122,7 +136,10 @@ export function ComparePage({
     if (hasCopied) {
       const next = adjustCount + 1
       setAdjustCount(next)
-      if (next >= 3) setShowHelpCard(true)
+      if (next >= 3) {
+        setShowHelpCard(true)
+        setShowSurveyCard(true)
+      }
     }
     refine(val, axes)
   }
@@ -135,7 +152,10 @@ export function ComparePage({
     if (hasCopied) {
       const next = adjustCount + 1
       setAdjustCount(next)
-      if (next >= 3) setShowHelpCard(true)
+      if (next >= 3) {
+        setShowHelpCard(true)
+        setShowSurveyCard(true)
+      }
     }
     const axisIndex = category.axes.findIndex((a) => a.id === axisId)
     const axisColor = AXIS_COLORS[axisIndex] ?? "#64748B"
@@ -149,6 +169,17 @@ export function ComparePage({
     setHasCopied(true)
     setCopySuccess(true)
     setTimeout(() => setCopySuccess(false), 2200)
+  }
+
+  const sendSurvey = (reason: string) => {
+    // 선택지 하나만 고르면 된다(F-공21, 팀 확정) — 첫 선택 후 잠금.
+    if (surveyReason) return
+    setSurveyReason(reason)
+    fetch("/api/survey", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category: category.id, reason, adjustCount }),
+    }).catch(() => {})
   }
 
   const sendFeedback = (rating: "up" | "down") => {
@@ -988,11 +1019,84 @@ export function ComparePage({
                     <span style={{ color: LIME, fontWeight: 700 }}>
                       • {axis.label}
                     </span>
-                    : 마지막 옵션을 선택하면 훨씬 구체적인 답변을 얻을 수
-                    있습니다.
+                    : {axis.hint ?? "옵션을 바꿔가며 결과가 어떻게 달라지는지 비교해보세요."}
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {showSurveyCard && (
+            <div
+              className="animate-slide-in"
+              style={{
+                background: "#fff",
+                color: INK,
+                borderRadius: 12,
+                padding: "16px 16px",
+                position: "relative",
+                border: "2px solid #111",
+                boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
+              }}
+            >
+              <button
+                onClick={() => setShowSurveyCard(false)}
+                style={{
+                  position: "absolute",
+                  top: 10,
+                  right: 12,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#888",
+                  fontSize: 16,
+                }}
+                aria-label="닫기"
+              >
+                ×
+              </button>
+              <p
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: INK,
+                  margin: "0 20px 10px 0",
+                  lineHeight: 1.5,
+                }}
+              >
+                조정을 몇 번 반복하셨네요. 어떤 점이 어려우셨나요?
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {SURVEY_REASONS.map((reason) => {
+                  const selected = surveyReason === reason
+                  const disabled = surveyReason !== null
+                  return (
+                    <button
+                      key={reason}
+                      disabled={disabled}
+                      onClick={() => sendSurvey(reason)}
+                      style={{
+                        textAlign: "left",
+                        background: selected ? LIME : "#FAFAF8",
+                        border: "1.5px solid #111",
+                        borderRadius: 8,
+                        padding: "7px 10px",
+                        fontSize: 12.5,
+                        fontWeight: selected ? 700 : 500,
+                        cursor: disabled ? "default" : "pointer",
+                        opacity: disabled && !selected ? 0.45 : 1,
+                      }}
+                    >
+                      {reason}
+                    </button>
+                  )
+                })}
+              </div>
+              {surveyReason && (
+                <p style={{ fontSize: 12, color: "#666", margin: "10px 0 0" }}>
+                  소중한 의견 감사합니다
+                </p>
+              )}
             </div>
           )}
         </div>

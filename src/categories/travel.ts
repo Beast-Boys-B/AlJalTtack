@@ -31,10 +31,30 @@ export const category: Category = {
   placeholder: "다음 달에 3박 4일 여행 가려고 해요. 뭘 준비해야 할까요?",
   example: "처음으로 혼자 해외여행을 가려고 해요. 뭘 준비해야 할지 전혀 모르겠어요.",
   axes: [
-    { id: "purpose", label: "목적", options: [...PURPOSE_OPTIONS] },
-    { id: "companion", label: "동행", options: [...COMPANION_OPTIONS] },
-    { id: "timing", label: "여행 시점", options: [...TIMING_OPTIONS] },
-    { id: "style", label: "여행 스타일", options: [...STYLE_OPTIONS] },
+    {
+      id: "purpose",
+      label: "목적",
+      options: [...PURPOSE_OPTIONS],
+      hint: "'여행지 정보 알아보기'는 추천 명소·맛집 위주로, '일정·동선 짜기'는 날짜별 일정표와 동선 위주로 답변이 구성돼요. 둘 다 고르면 두 내용이 함께 나와요.",
+    },
+    {
+      id: "companion",
+      label: "동행",
+      options: [...COMPANION_OPTIONS],
+      hint: "'동반자 있음'을 고르면 함께 다니기 좋은 동선으로, '혼자'는 혼자 다니기 편하고 안전한 동선 위주로 추천이 달라져요.",
+    },
+    {
+      id: "timing",
+      label: "여행 시점",
+      options: [...TIMING_OPTIONS],
+      hint: "'임박한 여행'을 고르면 예약·준비물처럼 지금 바로 확정할 것 위주로, '아직 막연한 단계'는 여러 선택지를 폭넓게 비교하는 방향으로 안내가 달라져요.",
+    },
+    {
+      id: "style",
+      label: "여행 스타일",
+      options: [...STYLE_OPTIONS],
+      hint: "'휴양/힐링'은 여유로운 일정으로, '액티비티/체험 중심'은 알차게 채운 일정으로 구성이 달라져요. 둘 다 고르면 두 내용이 함께 나와요.",
+    },
   ],
   hashtags: [
     {
