@@ -33,11 +33,20 @@ export default function App() {
   }
   const goToLibrary = () => setPage(3)
   const goBack = () => setPage(1)
-  const goReset = () => {
+  // 메인 화면(랜딩)으로 — 헤더 "← 메인 화면"/홈 버튼 전용.
+  const goHome = () => {
     setInputText("")
     setSelectedCategory(null)
     setDestination("")
     setPage(0)
+  }
+  // F-공18(팀 확정): 페이지2 "🔄 처음으로 돌아가기"는 랜딩이 아니라
+  // 페이지1(입력화면)로 이동하며 완전 리셋한다 — goHome과는 목적지가 다르다.
+  const goReset = () => {
+    setInputText("")
+    setSelectedCategory(null)
+    setDestination("")
+    setPage(1)
   }
   const handleStartWithExample = (categoryId: CategoryId, example: string) => {
     setSelectedCategory(categoryId)
@@ -61,7 +70,7 @@ export default function App() {
         setCrtEnabled={setCrtEnabled}
         credits={credits}
         score={score}
-        onHome={goReset}
+        onHome={goHome}
         onLibrary={goToLibrary}
       />
       <div style={{ flex: 1, overflow: "hidden" }}>
@@ -89,7 +98,7 @@ export default function App() {
               destination={destination}
               setDestination={setDestination}
               onNext={goToCompare}
-              onHome={goReset}
+              onHome={goHome}
               soundEnabled={soundEnabled}
             />
           </div>
@@ -118,7 +127,7 @@ export default function App() {
             style={{ height: "100%", overflowY: "auto" }}
           >
             <LibraryPage
-              onHome={goReset}
+              onHome={goHome}
               onStartWithExample={handleStartWithExample}
               soundEnabled={soundEnabled}
             />
