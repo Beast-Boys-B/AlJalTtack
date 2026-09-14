@@ -288,6 +288,17 @@ export function generatePrompt(
   if (styleRelaxOn) bullets.push("여유롭게 쉴 수 있는 휴양 위주로 일정을 구성해 주세요.")
   if (styleActiveOn) bullets.push("다양한 액티비티와 체험 위주로 알차게 일정을 구성해 주세요.")
 
+  // 축 하이라이트는 선택된 옵션 문구가 결과 텍스트에 그대로 있어야 동작하므로,
+  // 중복선택 축(목적/스타일)도 [축 이름] 라벨 줄로 원문을 그대로 남긴다
+  // (동행/여행 시점과 동일한 방식).
+  const purposeLabel =
+    purposeInfoOn && purposeScheduleOn
+      ? PURPOSE_OPTIONS[2]
+      : purposeScheduleOn
+        ? PURPOSE_OPTIONS[1]
+        : PURPOSE_OPTIONS[0]
+  const styleLabel =
+    styleRelaxOn && styleActiveOn ? STYLE_OPTIONS[2] : styleActiveOn ? STYLE_OPTIONS[1] : STYLE_OPTIONS[0]
   const companionLabel = companionIsGroup ? COMPANION_OPTIONS[1] : COMPANION_OPTIONS[0]
   const timingLabel = timingIsImminent ? TIMING_OPTIONS[0] : TIMING_OPTIONS[1]
   const dest = destination ? `[목적지] ${destination}\n` : ""
@@ -295,7 +306,7 @@ export function generatePrompt(
   // 고정 규칙(영업일정·환율 변동 안내)은 축 판정과 무관하게 항상 최종 프롬프트에 포함
   const safetyMessage = fixedRules.map((rule) => rule.message).join(" ")
 
-  return `당신은 ${role}입니다.\n\n${dest}[동행] ${companionLabel}\n[여행 시점] ${timingLabel}\n\n[여행 상황]\n${text}\n\n[요청사항]\n${bullets
+  return `당신은 ${role}입니다.\n\n${dest}[목적] ${purposeLabel}\n[동행] ${companionLabel}\n[여행 시점] ${timingLabel}\n[여행 스타일] ${styleLabel}\n\n[여행 상황]\n${text}\n\n[요청사항]\n${bullets
     .map((bullet) => `• ${bullet}`)
     .join("\n")}\n\n※ ${safetyMessage}`
 }
