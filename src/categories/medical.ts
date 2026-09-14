@@ -5,6 +5,12 @@
 
 import type { Category, FixedRule } from "./types"
 
+// 축 옵션 라벨(좌/우 순서 고정) — category.axes UI와 detectAxes/generatePrompt가
+// 이 문자열을 공유해서 오타로 인한 불일치를 막는다.
+const PURPOSE_OPTIONS = ["증상·질병 정보 알아보기", "병원 가기 전 문진 준비하기"] as const
+const TARGET_OPTIONS = ["본인", "가족/보호 대상자"] as const
+const NATURE_OPTIONS = ["갑자기 생긴 증상", "오래된/만성 증상"] as const
+
 export const category: Category = {
   id: "medical",
   name: "의료질문",
@@ -14,16 +20,9 @@ export const category: Category = {
   placeholder: "머리가 자주 아픈데 어떤 이유일 수 있나요? 병원은 어디 가야 하나요?",
   example: "두통이 일주일째 계속되는데 원인이 뭘까요. 어떤 병원에 가야 하나요?",
   axes: [
-    {
-      id: "terminology",
-      label: "설명 방식",
-      options: ["쉬운 말로", "일반적으로", "의학 용어로"],
-    },
-    {
-      id: "format",
-      label: "답변 형식",
-      options: ["간단히", "항목별로", "자세하게"],
-    },
+    { id: "purpose", label: "목적", options: [...PURPOSE_OPTIONS] },
+    { id: "target", label: "대상", options: [...TARGET_OPTIONS] },
+    { id: "nature", label: "증상 성격", options: [...NATURE_OPTIONS] },
   ],
   hashtags: [
     {
@@ -293,39 +292,51 @@ function detectSymptomNature(text: string): Side {
   return pickSide(left, right)
 }
 
-// axes(수동 선택값)는 이 카테고리 스키마상 축1~3이 전부 텍스트 자동 감지 대상이라 사용하지
-// 않는다 — 시그니처는 공유 계약(types.ts 미변경 원칙)을 지키기 위해 그대로 유지한다.
-export function generatePrompt(
-  text: string,
-  _axes: Record<string, string>,
-): string {
+// 자동 감지 — 페이지2 진입 시 이 결과로 축 버튼 초기 상태를 채운다(ComparePage에서 호출).
+// 반환값은 category.axes[].options에 있는 라벨 문자열 그대로다.
+export function detectAxes(text: string): Record<string, string> {
   const purpose = detectPurpose(text)
   const target = detectTarget(text)
   const nature = detectSymptomNature(text)
+  return {
+    purpose: purpose === "좌" ? PURPOSE_OPTIONS[0] : PURPOSE_OPTIONS[1],
+    target: target === "좌" ? TARGET_OPTIONS[0] : TARGET_OPTIONS[1],
+    nature: nature === "좌" ? NATURE_OPTIONS[0] : NATURE_OPTIONS[1],
+  }
+}
+
+// axes는 이미 확정된 축 값이다(detectAxes로 자동 채워졌거나, 사용자가 페이지2에서
+// 버튼을 눌러 직접 override한 값) — 여기서는 텍스트를 다시 감지하지 않고 그 값을
+// 그대로 문장 조립에 쓴다.
+export function generatePrompt(
+  text: string,
+  axes: Record<string, string>,
+): string {
+  const purposeIsPrep = axes["purpose"] === PURPOSE_OPTIONS[1]
+  const targetIsFamily = axes["target"] === TARGET_OPTIONS[1]
+  const natureIsChronic = axes["nature"] === NATURE_OPTIONS[1]
 
   // AI 역할(페르소나)은 축1(목적)에서 결정된다. (prd 축1 하단 안내 문단 근거)
-  const role =
-    purpose === "좌"
-      ? "건강 정보를 알기 쉽게 설명해주는 안내자"
-      : "진료 전 준비를 돕는 코디네이터"
+  const role = purposeIsPrep
+    ? "진료 전 준비를 돕는 코디네이터"
+    : "건강 정보를 알기 쉽게 설명해주는 안내자"
 
-  const targetLabel = target === "좌" ? "본인" : "가족/보호 대상자"
-  const natureLabel = nature === "좌" ? "갑자기 생긴 증상" : "오래된/만성 증상"
+  const targetLabel = targetIsFamily ? TARGET_OPTIONS[1] : TARGET_OPTIONS[0]
+  const natureLabel = natureIsChronic ? NATURE_OPTIONS[1] : NATURE_OPTIONS[0]
 
-  const bullets =
-    purpose === "좌"
-      ? [
-          "증상의 가능한 원인들을 설명해 주세요.",
-          "즉시 병원을 가야 하는 응급 신호가 있다면 알려주세요.",
-          "어느 진료과를 방문하면 좋을지 안내해 주세요.",
-          "일상에서 할 수 있는 자가 관리법도 포함해 주세요.",
-        ]
-      : [
-          "진료 전 의사에게 꼭 물어봐야 할 질문 목록을 정리해 주세요.",
-          "문진표/상담에서 답해야 할 항목(증상 시작 시점, 경과 등)을 짚어 주세요.",
-          "예상되는 검사나 준비물이 있다면 안내해 주세요.",
-          "진료실에서 증상을 효과적으로 설명하는 방법도 알려주세요.",
-        ]
+  const bullets = purposeIsPrep
+    ? [
+        "진료 전 의사에게 꼭 물어봐야 할 질문 목록을 정리해 주세요.",
+        "문진표/상담에서 답해야 할 항목(증상 시작 시점, 경과 등)을 짚어 주세요.",
+        "예상되는 검사나 준비물이 있다면 안내해 주세요.",
+        "진료실에서 증상을 효과적으로 설명하는 방법도 알려주세요.",
+      ]
+    : [
+        "증상의 가능한 원인들을 설명해 주세요.",
+        "즉시 병원을 가야 하는 응급 신호가 있다면 알려주세요.",
+        "어느 진료과를 방문하면 좋을지 안내해 주세요.",
+        "일상에서 할 수 있는 자가 관리법도 포함해 주세요.",
+      ]
 
   // 고정 규칙(안전 문구)은 축 판정과 무관하게 항상 최종 프롬프트에 포함
   const safetyMessage = fixedRules.map((rule) => rule.message).join(" ")

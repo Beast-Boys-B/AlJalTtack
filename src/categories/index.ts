@@ -47,3 +47,19 @@ export function generateRefinedPrompt(
   if (!text.trim()) return ""
   return MODULES[category.id].generatePrompt(text, axes, destination)
 }
+
+// Optional per-category auto-detection: given the user's natural-language
+// text, returns the axis values (as option label strings, matching
+// category.axes[].options) that should be pre-selected in the UI. Not every
+// category has implemented this yet — for those, returns {} and the UI
+// falls back to its existing default-option behavior.
+export function detectCategoryAxes(
+  text: string,
+  category: Category,
+): Record<string, string> {
+  const mod = MODULES[category.id] as {
+    detectAxes?: (text: string) => Record<string, string>
+  }
+  if (!text.trim() || !mod.detectAxes) return {}
+  return mod.detectAxes(text)
+}

@@ -1,6 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from "react"
 import { LIME, INK, IVORY, AXIS_COLORS } from "../theme"
-import { FIXED_RULES, generateRefinedPrompt, type Category } from "../categories"
+import {
+  FIXED_RULES,
+  generateRefinedPrompt,
+  detectCategoryAxes,
+  type Category,
+} from "../categories"
 import { playArcadeSound } from "../lib/sound"
 import { renderHighlightedText, type HighlightEntry } from "../lib/highlight"
 
@@ -23,9 +28,12 @@ export function ComparePage({
 }) {
   const [leftText, setLeftText] = useState(inputText)
   const [axes, setAxes] = useState<Record<string, string>>(() => {
+    // 자동 감지가 구현된 카테고리는 그 결과로 초기 버튼 상태를 채우고,
+    // 아직 구현 안 된 축(또는 카테고리)은 기존처럼 첫 번째 옵션을 기본값으로 둔다.
+    const detected = detectCategoryAxes(inputText, category)
     const init: Record<string, string> = {}
     category.axes.forEach((a) => {
-      init[a.id] = a.options[0]
+      init[a.id] = detected[a.id] ?? a.options[0]
     })
     return init
   })
