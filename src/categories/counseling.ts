@@ -494,5 +494,9 @@ export function generatePrompt(
 
   // 연애/인간관계 페르소나는 effect 안에 이미 "비속어·은어 금지"가 들어 있으므로
   // 여기서 별도 금칙어 지시를 중복 삽입하지 않는다(P-상담2).
-  return `다음 고민에 "${persona.personaLabel}"로 답변해 주세요.\n\n[페르소나 지침]\n• ${persona.effect}\n\n[상담 방식 지침]\n• ${styleInstruction}\n\n[상황]\n${text}\n\n[안전 규칙]\n• ${fixedRules[0].message}`
+  // 축 하이라이트는 선택된 옵션 문구가 결과 텍스트에 그대로 있어야 동작하므로
+  // (newPrompt.includes(option)), 페르소나 이름·효과 문구만으로는 옵션 원문이
+  // 결과에 안 남는 축(topic 6택 중 4개, style·intervention 전부)이 있었다 —
+  // [축 이름] 라벨 줄로 원문을 그대로 남겨서 고친다(medical.ts와 동일 방식).
+  return `다음 고민에 "${persona.personaLabel}"로 답변해 주세요.\n\n[상담 주제] ${topic}\n[상담 스타일] ${AXIS2_DISPLAY[style]}\n[개입 방식] ${AXIS3_DISPLAY[mode]}\n\n[페르소나 지침]\n• ${persona.effect}\n\n[상담 방식 지침]\n• ${styleInstruction}\n\n[상황]\n${text}\n\n[안전 규칙]\n• ${fixedRules[0].message}`
 }
