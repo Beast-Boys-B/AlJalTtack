@@ -5,6 +5,15 @@
 
 import type { Category, FixedRule } from "./types"
 
+// 축1(목적)은 prd상 중복선택 축이라, 좌/우 외에 "둘 다 감지" 상태를 표현할 세
+// 번째 옵션을 둔다(공유 Axis 타입이 단일 문자열 값만 허용하는 것에 맞춘 표현
+// 방식 — 여행계획(travel.ts)과 동일한 패턴).
+const PURPOSE_OPTIONS = [
+  "정보 전달/보고하기",
+  "요청/승인받기",
+  "정보 전달 + 요청 모두",
+] as const
+
 export const category: Category = {
   id: "writing",
   name: "작성",
@@ -17,7 +26,7 @@ export const category: Category = {
     {
       id: "purpose",
       label: "목적",
-      options: ["정보 전달/보고하기", "요청/승인받기"],
+      options: [...PURPOSE_OPTIONS],
     },
     {
       id: "target",
@@ -130,16 +139,22 @@ const PURPOSE_RIGHT_LITERAL = [
   "협조 부탁",
 ]
 
-const PURPOSE_LABEL = {
-  left: "정보 전달/보고하기",
-  right: "요청/승인받기",
-} as const
+interface DualSides {
+  left: boolean
+  right: boolean
+}
 
-function detectPurpose(text: string): { left: boolean; right: boolean } {
+function detectPurpose(text: string): DualSides {
   const left = hasNounRoot(text, PURPOSE_LEFT_NOUN) || hasLiteral(text, PURPOSE_LEFT_LITERAL)
   const right = hasNounRoot(text, PURPOSE_RIGHT_NOUN) || hasLiteral(text, PURPOSE_RIGHT_LITERAL)
   if (!left && !right) return { left: true, right: false } // 기본값: 좌
   return { left, right }
+}
+
+// 중복선택 축 공용 변환: 좌/우 둘 다면 3번째("모두") 옵션, 아니면 해당 단일 옵션.
+function dualToOption(sides: DualSides, options: readonly [string, string, string]): string {
+  if (sides.left && sides.right) return options[2]
+  return sides.right ? options[1] : options[0]
 }
 
 // ---------------------------------------------------------------------------
@@ -201,24 +216,30 @@ function detectDocType(text: string): "left" | "right" {
   return rightIdx > leftIdx ? "right" : "left"
 }
 
+// 자동 감지 — 페이지2 진입 시 이 결과로 축 버튼 초기 상태를 채운다(ComparePage에서 호출).
+// 반환값은 category.axes[].options에 있는 라벨 문자열 그대로다.
+export function detectAxes(text: string): Record<string, string> {
+  return {
+    purpose: dualToOption(detectPurpose(text), PURPOSE_OPTIONS),
+    target: TARGET_LABEL[detectTarget(text)],
+    docType: DOC_LABEL[detectDocType(text)],
+  }
+}
+
+// axes는 이미 확정된 축 값이다(detectAxes로 자동 채워졌거나, 사용자가 페이지2에서
+// 버튼을 눌러 직접 override한 값) — 여기서는 텍스트를 다시 감지하지 않고 그 값을
+// 그대로 문장 조립에 쓴다. 목적(축1) 중복선택은 3번째 "모두" 옵션으로 표현되므로,
+// PURPOSE_OPTIONS[1](우 전용)이 아니면 좌 포함, [0](좌 전용)이 아니면 우 포함이다
+// — "모두" 옵션은 둘 다에 해당해 자연히 양쪽 다 true가 된다(여행계획과 동일 패턴).
 export function generatePrompt(
   text: string,
   axes: Record<string, string>,
 ): string {
-  // 축1(목적)은 중복 선택 축이라 좌/우가 동시에 참일 수 있다. 공유 타입의
-  // axes는 Record<string, string>(축 하나당 값 하나)이라 두 개를 동시에 담을
-  // 채널이 없다 — 수동 선택이 있으면 그 옵션 하나만 참으로 두고, 없으면
-  // 자동 감지 결과(좌/우 동시 가능)를 그대로 쓴다.
-  // TODO(schema-1): 축1처럼 중복 선택인 축의 수동 선택값을 axes:
-  // Record<string,string>에 좌/우 모두 담아 전달하는 방법은 공유 계약에
-  // 정의돼 있지 않다. UI가 다중 선택을 지원하게 되면 이 부분을 다시 봐야 한다.
-  const manualPurpose = axes["purpose"]
-  const purpose =
-    manualPurpose === PURPOSE_LABEL.left
-      ? { left: true, right: false }
-      : manualPurpose === PURPOSE_LABEL.right
-        ? { left: false, right: true }
-        : detectPurpose(text)
+  const purposeValue = axes["purpose"]
+  const purpose: DualSides =
+    purposeValue && PURPOSE_OPTIONS.includes(purposeValue as (typeof PURPOSE_OPTIONS)[number])
+      ? { left: purposeValue !== PURPOSE_OPTIONS[1], right: purposeValue !== PURPOSE_OPTIONS[0] }
+      : detectPurpose(text)
 
   const manualTarget = axes["target"]
   const target: "left" | "right" =
@@ -236,11 +257,7 @@ export function generatePrompt(
         ? "left"
         : detectDocType(text)
 
-  const purposeParts: string[] = []
-  if (purpose.left) purposeParts.push(PURPOSE_LABEL.left)
-  if (purpose.right) purposeParts.push(PURPOSE_LABEL.right)
-  const purposeLabel = purposeParts.join(" + ") || PURPOSE_LABEL.left
-
+  const purposeLabel = dualToOption(purpose, PURPOSE_OPTIONS)
   const targetLabel = TARGET_LABEL[target]
   const docLabel = DOC_LABEL[docType]
 
