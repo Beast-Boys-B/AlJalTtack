@@ -3,6 +3,30 @@ import { LIME, INK, IVORY, CARD_H } from "../theme"
 import { CATEGORIES, CATEGORY_COLORS, type CategoryId } from "../categories"
 import { playArcadeSound } from "../lib/sound"
 
+// P-공8/P-공17(팀 확정): 자연어 입력은 500자 상한.
+const MAX_INPUT_LENGTH = 500
+
+// P-공9(P9-A, 팀 확정 "블랙리스트에 걸리는 입력은 처리 불가 + 경고·마스킹").
+// 정확한 단어 목록·마스킹 표시 방식은 05-policy.md에 명시가 없어(TC-공6 [?])
+// 팀 검토 전 MVP 임시 목록이다 — 명백한 욕설만 최소로 담았다.
+const PROFANITY_BLACKLIST = [
+  "씨발", "씨팔", "시발", "개새끼", "병신", "지랄", "좆", "미친놈", "미친년", "개소리",
+]
+
+function findProfanity(text: string): string[] {
+  return PROFANITY_BLACKLIST.filter((word) => text.includes(word))
+}
+
+// 입력창 아래 경고문에만 쓰는 미리보기 마스킹 — 실제 입력값(inputText)은
+// 그대로 두고 편집 가능하게 둔다(마스킹이 입력 자체를 훼손하면 안 됨).
+function maskProfanityPreview(text: string, words: string[]): string {
+  let masked = text
+  for (const word of words) {
+    masked = masked.split(word).join("*".repeat(word.length))
+  }
+  return masked
+}
+
 export function StartPage({
   inputText,
   setInputText,
@@ -36,7 +60,25 @@ export function StartPage({
     ? cat.placeholder
     : '떠오르는 대로 편하게 입력해보세요.\n\n예: "다음 달에 도쿄 여행 가려고 해요. 뭘 준비해야 할까요?"'
 
-  const canProceed = inputText.trim().length > 0 && selectedCategory !== null
+  const trimmedLength = inputText.trim().length
+  const charCount = inputText.length
+  const overLimit = charCount > MAX_INPUT_LENGTH
+  const profanityHits = findProfanity(inputText)
+  const hasProfanity = profanityHits.length > 0
+
+  const canProceed =
+    trimmedLength > 0 && selectedCategory !== null && !overLimit && !hasProfanity
+
+  // TC-공1: 빈 입력/카테고리 미선택을 구분해서 안내한다(둘 다 아니면 500자·욕설 안내).
+  const ctaLabel = !selectedCategory
+    ? "카테고리를 선택해주세요"
+    : trimmedLength === 0
+      ? "내용을 입력해주세요"
+      : hasProfanity
+        ? "부적절한 표현을 지워주세요"
+        : overLimit
+          ? "500자 이내로 입력해주세요"
+          : "🎮 프롬프트 완성하기 (START) →"
 
   return (
     <div
@@ -210,6 +252,40 @@ export function StartPage({
               boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
             }}
           />
+
+          {/* 500자 상한(P-공8/P-공17) */}
+          <div
+            style={{
+              textAlign: "right",
+              fontSize: 12.5,
+              fontWeight: 700,
+              marginTop: 6,
+              color: overLimit ? "#DC2626" : "#888",
+            }}
+          >
+            {charCount} / {MAX_INPUT_LENGTH}
+            {overLimit ? " · 500자를 넘었어요" : ""}
+          </div>
+
+          {/* 욕설 블랙리스트 경고(P-공9, MVP 임시 목록 — TC-공6 [?] 참고) */}
+          {hasProfanity && (
+            <div
+              className="animate-fade-in"
+              style={{
+                marginTop: 4,
+                padding: "10px 14px",
+                border: "2px solid #DC2626",
+                borderRadius: 10,
+                background: "#FEF2F2",
+                color: "#991B1B",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              ⚠ 부적절한 표현이 포함되어 있어요: "
+              {maskProfanityPreview(inputText, profanityHits)}"
+            </div>
+          )}
 
           {/* Travel destination */}
           {selectedCategory === "travel" && (
@@ -427,9 +503,7 @@ export function StartPage({
               opacity: canProceed ? 1 : 0.6,
             }}
           >
-            {canProceed
-              ? "🎮 프롬프트 완성하기 (START) →"
-              : "카테고리를 선택해주세요"}
+            {ctaLabel}
           </button>
 
           {!selectedCategory && inputText.trim() && (

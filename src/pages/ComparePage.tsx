@@ -51,6 +51,7 @@ export function ComparePage({
   const [refinedPrompt, setRefinedPrompt] = useState("")
   const [hasCopied, setHasCopied] = useState(false)
   const [copySuccess, setCopySuccess] = useState(false)
+  const [copyFailed, setCopyFailed] = useState(false)
   const [adjustCount, setAdjustCount] = useState(0)
   const [showHelpCard, setShowHelpCard] = useState(false)
   const [feedbackGiven, setFeedbackGiven] = useState<"up" | "down" | null>(null)
@@ -164,11 +165,20 @@ export function ComparePage({
 
   const handleCopy = () => {
     if (soundEnabled) playArcadeSound("copy")
-    addScore(300)
-    navigator.clipboard.writeText(refinedPrompt).catch(() => {})
-    setHasCopied(true)
-    setCopySuccess(true)
-    setTimeout(() => setCopySuccess(false), 2200)
+    // TC-공9/P-공13: 복사 실패 시 "복사됨" 표시하면 안 되고, 실패 안내 +
+    // 수동 복사 영역을 보여줘야 한다 — 성공/실패를 실제로 구분해서 처리.
+    navigator.clipboard
+      .writeText(refinedPrompt)
+      .then(() => {
+        addScore(300)
+        setCopyFailed(false)
+        setHasCopied(true)
+        setCopySuccess(true)
+        setTimeout(() => setCopySuccess(false), 2200)
+      })
+      .catch(() => {
+        setCopyFailed(true)
+      })
   }
 
   const sendSurvey = (reason: string) => {
@@ -595,6 +605,43 @@ export function ComparePage({
               🪙
             </span>
           </button>
+
+          {/* TC-공9/P-공13: 클립보드 복사 실패 시 수동 복사 영역 */}
+          {copyFailed && (
+            <div
+              className="animate-fade-in"
+              style={{
+                marginTop: 8,
+                padding: "10px 14px",
+                border: "2px solid #DC2626",
+                borderRadius: 10,
+                background: "#FEF2F2",
+                flexShrink: 0,
+              }}
+            >
+              <p style={{ margin: "0 0 6px", fontSize: 12.5, fontWeight: 700, color: "#991B1B" }}>
+                ⚠ 자동 복사에 실패했어요. 아래 내용을 직접 선택해서 복사해주세요.
+              </p>
+              <textarea
+                readOnly
+                value={refinedPrompt}
+                onFocus={(e) => e.currentTarget.select()}
+                style={{
+                  width: "100%",
+                  minHeight: 100,
+                  padding: 10,
+                  fontSize: 13,
+                  border: "1.5px solid #111",
+                  borderRadius: 8,
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                  color: INK,
+                  background: "#fff",
+                  boxSizing: "border-box",
+                  resize: "vertical",
+                }}
+              />
+            </div>
+          )}
 
           <div
             style={{
