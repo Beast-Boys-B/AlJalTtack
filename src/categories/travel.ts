@@ -266,6 +266,21 @@ export function generatePrompt(
         ? "여행지 정보를 친절하게 알려주는 여행 가이드"
         : "여행지 정보 안내와 일정 설계를 함께 도와주는 여행 플래너"
 
+  // 하이라이트 매칭용 라벨: 세부 조정에서 고른 옵션 문자열이 프롬프트에 그대로
+  // 등장해야 ComparePage의 exact-substring 하이라이트가 동작한다(동행/시점과 동일 패턴).
+  const purposeLabel =
+    purposeInfoOn && purposeScheduleOn
+      ? PURPOSE_OPTIONS[2]
+      : purposeScheduleOn
+        ? PURPOSE_OPTIONS[1]
+        : PURPOSE_OPTIONS[0]
+  const styleLabel =
+    styleRelaxOn && styleActiveOn
+      ? STYLE_OPTIONS[2]
+      : styleActiveOn
+        ? STYLE_OPTIONS[1]
+        : STYLE_OPTIONS[0]
+
   const bullets: string[] = []
   if (purposeInfoOn) {
     bullets.push("가볼 만한 여행지와 명소를 추천해 주세요.")
@@ -295,7 +310,7 @@ export function generatePrompt(
   // 고정 규칙(영업일정·환율 변동 안내)은 축 판정과 무관하게 항상 최종 프롬프트에 포함
   const safetyMessage = fixedRules.map((rule) => rule.message).join(" ")
 
-  return `당신은 ${role}입니다.\n\n${dest}[동행] ${companionLabel}\n[여행 시점] ${timingLabel}\n\n[여행 상황]\n${text}\n\n[요청사항]\n${bullets
+  return `당신은 ${role}입니다.\n\n${dest}[목적] ${purposeLabel}\n[동행] ${companionLabel}\n[여행 시점] ${timingLabel}\n[여행 스타일] ${styleLabel}\n\n[여행 상황]\n${text}\n\n[요청사항]\n${bullets
     .map((bullet) => `• ${bullet}`)
     .join("\n")}\n\n※ ${safetyMessage}`
 }
