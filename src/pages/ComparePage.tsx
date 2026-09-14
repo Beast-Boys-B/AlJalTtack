@@ -43,6 +43,7 @@ export function ComparePage({
   const [copySuccess, setCopySuccess] = useState(false)
   const [adjustCount, setAdjustCount] = useState(0)
   const [showHelpCard, setShowHelpCard] = useState(false)
+  const [feedbackGiven, setFeedbackGiven] = useState<"up" | "down" | null>(null)
   const [feedbackThanks, setFeedbackThanks] = useState(false)
 
   // Axis highlight system
@@ -151,6 +152,9 @@ export function ComparePage({
   }
 
   const sendFeedback = (rating: "up" | "down") => {
+    // 프롬프트 완성(이 세션에서 편집·복사해간 결과)당 평가는 한 번만 — 첫 클릭 후 잠금.
+    if (feedbackGiven) return
+    setFeedbackGiven(rating)
     fetch("/api/feedback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -645,19 +649,22 @@ export function ComparePage({
               <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
                 <button
                   className="btn-arcade"
+                  disabled={feedbackGiven !== null}
                   onClick={() => {
+                    if (feedbackGiven) return
                     if (soundEnabled) playArcadeSound("coin")
                     addScore(100)
                     sendFeedback("up")
                   }}
                   style={{
-                    background: "#fff",
+                    background: feedbackGiven === "up" ? "#EFEFEF" : "#fff",
                     border: "1.5px solid #111",
                     borderRadius: 8,
                     padding: "5px 12px",
-                    cursor: "pointer",
+                    cursor: feedbackGiven ? "default" : "pointer",
                     fontSize: 16,
                     fontWeight: 700,
+                    opacity: feedbackGiven && feedbackGiven !== "up" ? 0.4 : 1,
                   }}
                   title="좋아요"
                 >
@@ -665,18 +672,21 @@ export function ComparePage({
                 </button>
                 <button
                   className="btn-arcade"
+                  disabled={feedbackGiven !== null}
                   onClick={() => {
+                    if (feedbackGiven) return
                     if (soundEnabled) playArcadeSound("select")
                     sendFeedback("down")
                   }}
                   style={{
-                    background: "#fff",
+                    background: feedbackGiven === "down" ? "#EFEFEF" : "#fff",
                     border: "1.5px solid #111",
                     borderRadius: 8,
                     padding: "5px 12px",
-                    cursor: "pointer",
+                    cursor: feedbackGiven ? "default" : "pointer",
                     fontSize: 16,
                     fontWeight: 700,
+                    opacity: feedbackGiven && feedbackGiven !== "down" ? 0.4 : 1,
                   }}
                   title="아쉬워요"
                 >
