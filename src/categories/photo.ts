@@ -193,6 +193,18 @@ function detectFraming(text: string): "left" | "right" {
   return rightIdx > leftIdx ? "right" : "left"
 }
 
+// 자동 감지 — 페이지2 진입 시 이 결과로 축 버튼 초기 상태를 채운다(ComparePage에서 호출).
+// 이게 없으면 ComparePage는 첫 옵션을 기본값으로 쓰는데, 그 첫 옵션 문자열이
+// 마침 STYLE_LABEL.left 등과 똑같아서 generatePrompt가 이를 "수동 선택"으로
+// 착각해 첫 로드 시 실제 텍스트 감지를 건너뛰던 문제가 있었다.
+export function detectAxes(text: string): Record<string, string> {
+  return {
+    style: STYLE_LABEL[detectStyle(text)],
+    subject: SUBJECT_LABEL[detectSubject(text)],
+    framing: FRAMING_LABEL[detectFraming(text)],
+  }
+}
+
 // prd/AI사진생성.md > 태그 조립 원칙: 각 축(스타일/피사체/구도)에서 감지된
 // 신호 1개씩만 태그로 변환되므로, 결과는 항상 정확히 3개의 키워드로
 // 고정된다. 조립 형식도 다른 4개 카테고리(역할지정형 문장)와 달리
