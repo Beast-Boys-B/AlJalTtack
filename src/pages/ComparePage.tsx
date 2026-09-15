@@ -137,10 +137,7 @@ export function ComparePage({
     if (hasCopied) {
       const next = adjustCount + 1
       setAdjustCount(next)
-      if (next >= 3) {
-        setShowHelpCard(true)
-        setShowSurveyCard(true)
-      }
+      if (next >= 3) setShowHelpCard(true)
     }
     refine(val, axes)
   }
@@ -153,10 +150,7 @@ export function ComparePage({
     if (hasCopied) {
       const next = adjustCount + 1
       setAdjustCount(next)
-      if (next >= 3) {
-        setShowHelpCard(true)
-        setShowSurveyCard(true)
-      }
+      if (next >= 3) setShowHelpCard(true)
     }
     const axisIndex = category.axes.findIndex((a) => a.id === axisId)
     const axisColor = AXIS_COLORS[axisIndex] ?? "#64748B"
@@ -196,6 +190,9 @@ export function ComparePage({
     // 프롬프트 완성(이 세션에서 편집·복사해간 결과)당 평가는 한 번만 — 첫 클릭 후 잠금.
     if (feedbackGiven) return
     setFeedbackGiven(rating)
+    // 설문(F-공21) 트리거 변경: 재조정 3회 자동 노출이 아니라, 3회 이상
+    // 조정한 사용자가 평가(👍/👎) 버튼을 눌렀을 때 이어서 노출.
+    if (adjustCount >= 3) setShowSurveyCard(true)
     fetch("/api/feedback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -298,7 +295,7 @@ export function ComparePage({
         style={{
           flex: 1,
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 270px",
+          gridTemplateColumns: "2fr 3fr 270px",
           gap: 0,
           overflow: "hidden",
           height: "calc(100vh - 120px)",
@@ -353,7 +350,8 @@ export function ComparePage({
             value={leftText}
             onChange={(e) => handleLeftChange(e.target.value)}
             style={{
-              flex: 1,
+              height: 280,
+              flexShrink: 0,
               padding: "14px 16px",
               fontSize: 14.5,
               lineHeight: 1.7,
@@ -368,84 +366,256 @@ export function ComparePage({
               boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
             }}
           />
-          {FIXED_RULES[category.id].length > 0 ? (
-            <div
-              style={{
-                flexShrink: 0,
-                background: "#FFF5F5",
-                border: "1.5px solid #F87171",
-                borderRadius: 10,
-                padding: "10px 14px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 7,
-              }}
-            >
+
+          {/* 원문 입력칸을 줄여서 생긴 공간 — 상시 존재하는 것(고정 규칙·평가)만
+              여기 담는다. 힌트/설문(가끔 뜨는 것)은 레이아웃에 자리를 차지하지
+              않도록 화면에 떠있는 팝업으로 따로 뺐다(아래 참고). */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+              overflowY: "auto",
+              minHeight: 0,
+            }}
+            className="scrollbar-hide"
+          >
+            {FIXED_RULES[category.id].length > 0 ? (
               <div
                 style={{
-                  fontSize: 10,
-                  fontWeight: 800,
-                  color: "#DC2626",
-                  letterSpacing: 0.5,
+                  flexShrink: 0,
+                  background: "#FFF5F5",
+                  border: "1.5px solid #F87171",
+                  borderRadius: 10,
+                  padding: "10px 14px",
                   display: "flex",
-                  alignItems: "center",
-                  gap: 5,
+                  flexDirection: "column",
+                  gap: 7,
                 }}
-                className="font-pixel"
               >
-                ⚠ FIXED RULE
-              </div>
-              {FIXED_RULES[category.id].map((rule, i) => (
                 <div
-                  key={i}
                   style={{
+                    fontSize: 10,
+                    fontWeight: 800,
+                    color: "#DC2626",
+                    letterSpacing: 0.5,
                     display: "flex",
-                    gap: 7,
-                    alignItems: "flex-start",
+                    alignItems: "center",
+                    gap: 5,
                   }}
+                  className="font-pixel"
                 >
-                  <span
-                    style={{
-                      background: "#DC2626",
-                      color: "#fff",
-                      fontSize: 10,
-                      fontWeight: 800,
-                      padding: "1px 6px",
-                      borderRadius: 4,
-                      whiteSpace: "nowrap",
-                      flexShrink: 0,
-                      marginTop: 1,
-                    }}
-                  >
-                    {rule.label}
-                  </span>
-                  <p
-                    style={{
-                      fontSize: 11.5,
-                      color: "#B91C1C",
-                      margin: 0,
-                      fontWeight: 600,
-                      lineHeight: 1.55,
-                    }}
-                  >
-                    {rule.message}
-                  </p>
+                  ⚠ FIXED RULE
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p
+                {FIXED_RULES[category.id].map((rule, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      gap: 7,
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <span
+                      style={{
+                        background: "#DC2626",
+                        color: "#fff",
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: "1px 6px",
+                        borderRadius: 4,
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                        marginTop: 1,
+                      }}
+                    >
+                      {rule.label}
+                    </span>
+                    <p
+                      style={{
+                        fontSize: 11.5,
+                        color: "#B91C1C",
+                        margin: 0,
+                        fontWeight: 600,
+                        lineHeight: 1.55,
+                      }}
+                    >
+                      {rule.message}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "#666",
+                  margin: 0,
+                  fontWeight: 500,
+                  flexShrink: 0,
+                }}
+              >
+                ✏️ 내용을 수정하면 오른쪽에 바로 정제되어 반영돼요.
+              </p>
+            )}
+
+            {/* 만족도 평가(F-공20/P-공23) — 정제결과 칸에서 이전, 복사·바로가기와는
+                독립적인 세션 피드백이라 개념적으로 여기가 더 맞다 */}
+            <div
               style={{
-                fontSize: 12,
-                color: "#666",
-                margin: 0,
-                fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "#fff",
+                border: "1.5px solid #111",
+                borderRadius: 10,
+                padding: "8px 14px",
+                flexWrap: "nowrap",
                 flexShrink: 0,
+                boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
               }}
             >
-              ✏️ 내용을 수정하면 오른쪽에 바로 정제되어 반영돼요.
-            </p>
-          )}
+              <span
+                style={{
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  color: INK,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                결과가 마음에 드시나요?
+              </span>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
+                <button
+                  className="btn-arcade"
+                  disabled={feedbackGiven !== null}
+                  onClick={() => {
+                    if (feedbackGiven) return
+                    if (soundEnabled) playArcadeSound("coin")
+                    addScore(100)
+                    sendFeedback("up")
+                  }}
+                  style={{
+                    background: feedbackGiven === "up" ? "#EFEFEF" : "#fff",
+                    border: "1.5px solid #111",
+                    borderRadius: 8,
+                    padding: "5px 12px",
+                    cursor: feedbackGiven ? "default" : "pointer",
+                    fontSize: 16,
+                    fontWeight: 700,
+                    opacity: feedbackGiven && feedbackGiven !== "up" ? 0.4 : 1,
+                  }}
+                  title="좋아요"
+                >
+                  👍
+                </button>
+                <button
+                  className="btn-arcade"
+                  disabled={feedbackGiven !== null}
+                  onClick={() => {
+                    if (feedbackGiven) return
+                    if (soundEnabled) playArcadeSound("select")
+                    sendFeedback("down")
+                  }}
+                  style={{
+                    background: feedbackGiven === "down" ? "#EFEFEF" : "#fff",
+                    border: "1.5px solid #111",
+                    borderRadius: 8,
+                    padding: "5px 12px",
+                    cursor: feedbackGiven ? "default" : "pointer",
+                    fontSize: 16,
+                    fontWeight: 700,
+                    opacity: feedbackGiven && feedbackGiven !== "down" ? 0.4 : 1,
+                  }}
+                  title="아쉬워요"
+                >
+                  👎
+                </button>
+                {feedbackThanks && (
+                  <span style={{ fontSize: 12.5, color: "#666", whiteSpace: "nowrap" }}>
+                    소중한 의견 감사합니다
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* 재조정 3회 이상 후 평가 버튼을 눌렀을 때만 이어서 노출 —
+                평가 버튼 근처에 두는 게 자연스러워서 팝업이 아니라 바로 아래에 배치 */}
+            {showSurveyCard && (
+              <div
+                className="animate-slide-in"
+                style={{
+                  flexShrink: 0,
+                  background: "#fff",
+                  color: INK,
+                  borderRadius: 12,
+                  padding: "16px 16px",
+                  position: "relative",
+                  border: "2px solid #111",
+                  boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
+                }}
+              >
+                <button
+                  onClick={() => setShowSurveyCard(false)}
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    right: 12,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "#888",
+                    fontSize: 16,
+                  }}
+                  aria-label="닫기"
+                >
+                  ×
+                </button>
+                <p
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: INK,
+                    margin: "0 20px 10px 0",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  조정을 몇 번 반복하셨네요. 어떤 점이 어려우셨나요?
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {SURVEY_REASONS.map((reason) => {
+                    const selected = surveyReason === reason
+                    const disabled = surveyReason !== null
+                    return (
+                      <button
+                        key={reason}
+                        disabled={disabled}
+                        onClick={() => sendSurvey(reason)}
+                        style={{
+                          textAlign: "left",
+                          background: selected ? LIME : "#FAFAF8",
+                          border: "1.5px solid #111",
+                          borderRadius: 8,
+                          padding: "7px 10px",
+                          fontSize: 12.5,
+                          fontWeight: selected ? 700 : 500,
+                          cursor: disabled ? "default" : "pointer",
+                          opacity: disabled && !selected ? 0.45 : 1,
+                        }}
+                      >
+                        {reason}
+                      </button>
+                    )
+                  })}
+                </div>
+                {surveyReason && (
+                  <p style={{ fontSize: 12, color: "#666", margin: "10px 0 0" }}>
+                    소중한 의견 감사합니다
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right: Refined */}
@@ -694,89 +864,6 @@ export function ComparePage({
                 </a>
               ))}
             </div>
-            <div
-              style={{
-                borderTop: "2px dashed #111",
-                opacity: 0.25,
-                margin: "2px 0",
-              }}
-            />
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                background: "#FAFAF8",
-                border: "1.5px solid #111",
-                borderRadius: 10,
-                padding: "8px 14px",
-                flexWrap: "nowrap",
-                boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 12.5,
-                  fontWeight: 700,
-                  color: INK,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                결과가 마음에 드시나요?
-              </span>
-              <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
-                <button
-                  className="btn-arcade"
-                  disabled={feedbackGiven !== null}
-                  onClick={() => {
-                    if (feedbackGiven) return
-                    if (soundEnabled) playArcadeSound("coin")
-                    addScore(100)
-                    sendFeedback("up")
-                  }}
-                  style={{
-                    background: feedbackGiven === "up" ? "#EFEFEF" : "#fff",
-                    border: "1.5px solid #111",
-                    borderRadius: 8,
-                    padding: "5px 12px",
-                    cursor: feedbackGiven ? "default" : "pointer",
-                    fontSize: 16,
-                    fontWeight: 700,
-                    opacity: feedbackGiven && feedbackGiven !== "up" ? 0.4 : 1,
-                  }}
-                  title="좋아요"
-                >
-                  👍
-                </button>
-                <button
-                  className="btn-arcade"
-                  disabled={feedbackGiven !== null}
-                  onClick={() => {
-                    if (feedbackGiven) return
-                    if (soundEnabled) playArcadeSound("select")
-                    sendFeedback("down")
-                  }}
-                  style={{
-                    background: feedbackGiven === "down" ? "#EFEFEF" : "#fff",
-                    border: "1.5px solid #111",
-                    borderRadius: 8,
-                    padding: "5px 12px",
-                    cursor: feedbackGiven ? "default" : "pointer",
-                    fontSize: 16,
-                    fontWeight: 700,
-                    opacity: feedbackGiven && feedbackGiven !== "down" ? 0.4 : 1,
-                  }}
-                  title="아쉬워요"
-                >
-                  👎
-                </button>
-                {feedbackThanks && (
-                  <span style={{ fontSize: 12.5, color: "#666", whiteSpace: "nowrap" }}>
-                    소중한 의견 감사합니다
-                  </span>
-                )}
-              </div>
-            </div>
           </div>
 
           {hasCopied && adjustCount > 0 && (
@@ -997,155 +1084,6 @@ export function ComparePage({
               </div>
             </div>
           ))}
-
-          <div style={{ borderTop: "2px dashed #111" }} />
-
-          {showHelpCard && (
-            <div
-              className="animate-slide-in"
-              style={{
-                background: INK,
-                color: "#fff",
-                borderRadius: 12,
-                padding: "18px 16px",
-                position: "relative",
-                border: `2px solid ${LIME}`,
-                boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
-              }}
-            >
-              <button
-                onClick={() => setShowHelpCard(false)}
-                style={{
-                  position: "absolute",
-                  top: 10,
-                  right: 12,
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "#888",
-                  fontSize: 16,
-                }}
-              >
-                ×
-              </button>
-              <div style={{ fontSize: 20, marginBottom: 6 }}>💡</div>
-              <div
-                className="font-pixel"
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: LIME,
-                  marginBottom: 6,
-                }}
-              >
-                ARCADE HINT
-              </div>
-              <p
-                style={{
-                  fontSize: 13,
-                  color: "#DDD",
-                  lineHeight: 1.6,
-                  margin: 0,
-                }}
-              >
-                세부 조정을 이렇게 활용해보세요:
-              </p>
-              <div
-                style={{
-                  marginTop: 12,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                }}
-              >
-                {category.axes.map((axis) => (
-                  <div
-                    key={axis.id}
-                    style={{ fontSize: 12, color: "#AAA", lineHeight: 1.5 }}
-                  >
-                    <span style={{ color: LIME, fontWeight: 700 }}>
-                      • {axis.label}
-                    </span>
-                    : {axis.hint ?? "옵션을 바꿔가며 결과가 어떻게 달라지는지 비교해보세요."}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {showSurveyCard && (
-            <div
-              className="animate-slide-in"
-              style={{
-                background: "#fff",
-                color: INK,
-                borderRadius: 12,
-                padding: "16px 16px",
-                position: "relative",
-                border: "2px solid #111",
-                boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
-              }}
-            >
-              <button
-                onClick={() => setShowSurveyCard(false)}
-                style={{
-                  position: "absolute",
-                  top: 10,
-                  right: 12,
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "#888",
-                  fontSize: 16,
-                }}
-                aria-label="닫기"
-              >
-                ×
-              </button>
-              <p
-                style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: INK,
-                  margin: "0 20px 10px 0",
-                  lineHeight: 1.5,
-                }}
-              >
-                조정을 몇 번 반복하셨네요. 어떤 점이 어려우셨나요?
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {SURVEY_REASONS.map((reason) => {
-                  const selected = surveyReason === reason
-                  const disabled = surveyReason !== null
-                  return (
-                    <button
-                      key={reason}
-                      disabled={disabled}
-                      onClick={() => sendSurvey(reason)}
-                      style={{
-                        textAlign: "left",
-                        background: selected ? LIME : "#FAFAF8",
-                        border: "1.5px solid #111",
-                        borderRadius: 8,
-                        padding: "7px 10px",
-                        fontSize: 12.5,
-                        fontWeight: selected ? 700 : 500,
-                        cursor: disabled ? "default" : "pointer",
-                        opacity: disabled && !selected ? 0.45 : 1,
-                      }}
-                    >
-                      {reason}
-                    </button>
-                  )
-                })}
-              </div>
-              {surveyReason && (
-                <p style={{ fontSize: 12, color: "#666", margin: "10px 0 0" }}>
-                  소중한 의견 감사합니다
-                </p>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
@@ -1193,6 +1131,92 @@ export function ComparePage({
           ← 뒤로가기
         </button>
       </footer>
+
+      {/* 힌트 팝업 — 레이아웃 흐름 밖에 떠서 스크롤을 따라다니는 고정 위치
+          알림. 좌하단에 둬서 우측 축 사이드바를 가리지 않게 한다. */}
+      {showHelpCard && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 20,
+            left: 20,
+            zIndex: 50,
+            width: 320,
+            maxWidth: "calc(100vw - 40px)",
+          }}
+        >
+          <div
+            className="animate-slide-in"
+            style={{
+              background: INK,
+              color: "#fff",
+              borderRadius: 12,
+              padding: "18px 16px",
+              position: "relative",
+              border: `2px solid ${LIME}`,
+              boxShadow: "4px 4px 0 rgba(17,17,17,0.4)",
+            }}
+          >
+            <button
+              onClick={() => setShowHelpCard(false)}
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 12,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "#888",
+                fontSize: 16,
+              }}
+            >
+              ×
+            </button>
+            <div style={{ fontSize: 20, marginBottom: 6 }}>💡</div>
+            <div
+              className="font-pixel"
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: LIME,
+                marginBottom: 6,
+              }}
+            >
+              ARCADE HINT
+            </div>
+            <p
+              style={{
+                fontSize: 13,
+                color: "#DDD",
+                lineHeight: 1.6,
+                margin: 0,
+              }}
+            >
+              세부 조정을 이렇게 활용해보세요:
+            </p>
+            <div
+              style={{
+                marginTop: 12,
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              {category.axes.map((axis) => (
+                <div
+                  key={axis.id}
+                  style={{ fontSize: 12, color: "#AAA", lineHeight: 1.5 }}
+                >
+                  <span style={{ color: LIME, fontWeight: 700 }}>
+                    • {axis.label}
+                  </span>
+                  : {axis.hint ?? "옵션을 바꿔가며 결과가 어떻게 달라지는지 비교해보세요."}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
