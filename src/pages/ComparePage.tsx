@@ -313,59 +313,154 @@ export function ComparePage({
             overflow: "hidden",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexShrink: 0,
-            }}
-          >
+          {/* 라벨줄+textarea를 position:relative 기준자로 따로 묶어서, 힌트
+              팝업을 이 박스의 아랫변(top:100%)에 순수 CSS로 정확히 맞물리게
+              한다 — JS로 위치를 재던 이전 방식은 웹폰트 로딩 타이밍에 따라
+              카테고리마다 살짝씩 어긋났었다. */}
+          <div style={{ position: "relative", flexShrink: 0 }}>
             <div
               style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: INK,
-                background: "#E0E0DC",
-                padding: "2px 8px",
-                borderRadius: 4,
-                border: "1.5px solid #111",
-                display: "inline-flex",
+                display: "flex",
                 alignItems: "center",
-                gap: 5,
+                justifyContent: "space-between",
+                marginBottom: 10,
               }}
             >
-              <span className="font-pixel">[ 1P INPUT ]</span>
-              <span
-                style={{ fontFamily: "'GyeonggiTitle', sans-serif", fontSize: 13 }}
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: INK,
+                  background: "#E0E0DC",
+                  padding: "2px 8px",
+                  borderRadius: 4,
+                  border: "1.5px solid #111",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                }}
               >
-                원본
-              </span>
+                <span className="font-pixel">[ 1P INPUT ]</span>
+                <span
+                  style={{ fontFamily: "'GyeonggiTitle', sans-serif", fontSize: 13 }}
+                >
+                  원본
+                </span>
+              </div>
+              <div className="font-pixel" style={{ fontSize: 10, color: "#888" }}>
+                {leftText.length} CHARS
+              </div>
             </div>
-            <div className="font-pixel" style={{ fontSize: 10, color: "#888" }}>
-              {leftText.length} CHARS
-            </div>
+            <textarea
+              value={leftText}
+              onChange={(e) => handleLeftChange(e.target.value)}
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                height: 280,
+                padding: "14px 16px",
+                fontSize: 14.5,
+                lineHeight: 1.7,
+                border: "2.5px solid #111",
+                borderRadius: 12,
+                resize: "none",
+                outline: "none",
+                fontFamily: "'Noto Sans KR', sans-serif",
+                color: INK,
+                background: "#fff",
+                caretColor: LIME,
+                boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
+              }}
+            />
+
+            {/* 힌트 팝업 — 레이아웃 흐름 밖에 떠서(position:absolute) 아래
+                내용의 높이에 영향을 주지 않으면서, 이 박스(라벨줄+textarea)의
+                아랫변에 윗변이 정확히 맞물린다. 좌측에 둬서 우측 축
+                사이드바를 가리지 않는다. */}
+            {showHelpCard && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  zIndex: 50,
+                  width: 320,
+                  maxWidth: "100%",
+                }}
+              >
+                <div
+                  className="animate-slide-in"
+                  style={{
+                    background: INK,
+                    color: "#fff",
+                    borderRadius: 12,
+                    padding: "18px 16px",
+                    position: "relative",
+                    border: `2px solid ${LIME}`,
+                    boxShadow: "4px 4px 0 rgba(17,17,17,0.4)",
+                  }}
+                >
+                  <button
+                    onClick={() => setShowHelpCard(false)}
+                    style={{
+                      position: "absolute",
+                      top: 10,
+                      right: 12,
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: "#888",
+                      fontSize: 16,
+                    }}
+                  >
+                    ×
+                  </button>
+                  <div style={{ fontSize: 20, marginBottom: 6 }}>💡</div>
+                  <div
+                    className="font-pixel"
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: LIME,
+                      marginBottom: 6,
+                    }}
+                  >
+                    ARCADE HINT
+                  </div>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: "#DDD",
+                      lineHeight: 1.6,
+                      margin: 0,
+                    }}
+                  >
+                    세부 조정을 이렇게 활용해보세요:
+                  </p>
+                  <div
+                    style={{
+                      marginTop: 12,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                    }}
+                  >
+                    {category.axes.map((axis) => (
+                      <div
+                        key={axis.id}
+                        style={{ fontSize: 12, color: "#AAA", lineHeight: 1.5 }}
+                      >
+                        <span style={{ color: LIME, fontWeight: 700 }}>
+                          • {axis.label}
+                        </span>
+                        : {axis.hint ?? "옵션을 바꿔가며 결과가 어떻게 달라지는지 비교해보세요."}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-          <textarea
-            value={leftText}
-            onChange={(e) => handleLeftChange(e.target.value)}
-            style={{
-              height: 280,
-              flexShrink: 0,
-              padding: "14px 16px",
-              fontSize: 14.5,
-              lineHeight: 1.7,
-              border: "2.5px solid #111",
-              borderRadius: 12,
-              resize: "none",
-              outline: "none",
-              fontFamily: "'Noto Sans KR', sans-serif",
-              color: INK,
-              background: "#fff",
-              caretColor: LIME,
-              boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
-            }}
-          />
 
           {/* 원문 입력칸을 줄여서 생긴 공간 — 상시 존재하는 것(고정 규칙·평가)만
               여기 담는다. 힌트/설문(가끔 뜨는 것)은 레이아웃에 자리를 차지하지
@@ -1132,91 +1227,6 @@ export function ComparePage({
         </button>
       </footer>
 
-      {/* 힌트 팝업 — 레이아웃 흐름 밖에 떠서 스크롤을 따라다니는 고정 위치
-          알림. 좌하단에 둬서 우측 축 사이드바를 가리지 않게 한다. */}
-      {showHelpCard && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 20,
-            left: 20,
-            zIndex: 50,
-            width: 320,
-            maxWidth: "calc(100vw - 40px)",
-          }}
-        >
-          <div
-            className="animate-slide-in"
-            style={{
-              background: INK,
-              color: "#fff",
-              borderRadius: 12,
-              padding: "18px 16px",
-              position: "relative",
-              border: `2px solid ${LIME}`,
-              boxShadow: "4px 4px 0 rgba(17,17,17,0.4)",
-            }}
-          >
-            <button
-              onClick={() => setShowHelpCard(false)}
-              style={{
-                position: "absolute",
-                top: 10,
-                right: 12,
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "#888",
-                fontSize: 16,
-              }}
-            >
-              ×
-            </button>
-            <div style={{ fontSize: 20, marginBottom: 6 }}>💡</div>
-            <div
-              className="font-pixel"
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: LIME,
-                marginBottom: 6,
-              }}
-            >
-              ARCADE HINT
-            </div>
-            <p
-              style={{
-                fontSize: 13,
-                color: "#DDD",
-                lineHeight: 1.6,
-                margin: 0,
-              }}
-            >
-              세부 조정을 이렇게 활용해보세요:
-            </p>
-            <div
-              style={{
-                marginTop: 12,
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-              }}
-            >
-              {category.axes.map((axis) => (
-                <div
-                  key={axis.id}
-                  style={{ fontSize: 12, color: "#AAA", lineHeight: 1.5 }}
-                >
-                  <span style={{ color: LIME, fontWeight: 700 }}>
-                    • {axis.label}
-                  </span>
-                  : {axis.hint ?? "옵션을 바꿔가며 결과가 어떻게 달라지는지 비교해보세요."}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
