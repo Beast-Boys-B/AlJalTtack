@@ -150,5 +150,5 @@
 # support fetch just the pointer text, which breaks the image at runtime).
 # Overrides the *.png rule above since a later match wins.
 # ---------------------------------------------------------------------------
-extension/icons/*.png filter= diff= merge= -text
+extension/**/*.png filter= diff= merge= -text
 src/assets/toggle/*.png filter= diff= merge= -text

@@ -1,0 +1,1 @@
+import{n as e,t}from"./insertText-UBc8MZCn.js";function n(){return document.querySelector(`p.is-editor-empty, p.is-empty`)?.closest(`[contenteditable="true"]`)||t([`div.ProseMirror[contenteditable="true"]`,`div.tiptap[contenteditable="true"]`,`div[contenteditable="true"]`])()}e(n);
