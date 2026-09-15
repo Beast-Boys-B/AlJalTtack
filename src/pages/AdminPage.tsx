@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { LIME, INK, IVORY } from "../theme"
 import { CATEGORIES, CATEGORY_COLORS, type CategoryId } from "../categories"
 
@@ -60,20 +60,22 @@ function categoryIcon(id: CategoryId): string {
 }
 
 export function AdminPage() {
-  const [authHeader, setAuthHeader] = useState<string | null>(() => {
-    try {
-      return sessionStorage.getItem(SESSION_KEY)
-    } catch {
-      return null
-    }
-  })
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState<string | null>(null)
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
+  // 최신 성공 인증 헤더 — state가 아니라 ref로 들고 있어서 "새로고침" 버튼이
+  // 리렌더 사이클을 거치지 않고 바로 최신 값을 읽는다(가시적 화면 전환은
+  // 오직 stats 유무로만 결정 — 아래 fetchStats/handleLogin 참고).
+  const authHeaderRef = useRef<string | null>(null)
 
+  // fetchStats 하나가 로그인 제출과 새로고침 둘 다 처리한다: 호출 즉시
+  // setLoading(true)로 시작해서, 화면 전환은 오직 "stats가 있냐 없냐"
+  // 하나로만 결정한다 — authHeader라는 별도 state를 두고 effect로 연결하면
+  // 상태 갱신 사이 프레임에 로그인 화면으로 되돌아가 보이는 경쟁 상태가
+  // 생겼었다(제출해도 반응이 없는 것처럼 보이는 원인).
   const fetchStats = async (header: string) => {
     setLoading(true)
     setLoadError(null)
@@ -82,7 +84,6 @@ export function AdminPage() {
         headers: { Authorization: header },
       })
       if (res.status === 401) {
-        setAuthHeader(null)
         try {
           sessionStorage.removeItem(SESSION_KEY)
         } catch {
@@ -96,6 +97,12 @@ export function AdminPage() {
         return
       }
       const data = (await res.json()) as Stats
+      authHeaderRef.current = header
+      try {
+        sessionStorage.setItem(SESSION_KEY, header)
+      } catch {
+        /* ignore */
+      }
       setStats(data)
     } catch {
       setLoadError("서버에 연결할 수 없습니다.")
@@ -104,21 +111,30 @@ export function AdminPage() {
     }
   }
 
+  // 마운트 시 한 번만: 이전에 로그인해 세션에 저장해둔 값이 있으면 자동 조회.
   useEffect(() => {
-    if (authHeader) fetchStats(authHeader)
+    let saved: string | null = null
+    try {
+      saved = sessionStorage.getItem(SESSION_KEY)
+    } catch {
+      /* ignore */
+    }
+    if (saved) fetchStats(saved)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authHeader])
+  }, [])
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
     setLoginError(null)
-    // authHeader를 세팅하면 위 useEffect가 fetchStats를 호출한다 — 401이면
-    // 그 안에서 다시 null로 되돌리고 loginError를 띄운다.
-    setAuthHeader(`Basic ${btoa(`${username}:${password}`)}`)
+    fetchStats(`Basic ${btoa(`${username}:${password}`)}`)
+  }
+
+  const handleRefresh = () => {
+    if (authHeaderRef.current) fetchStats(authHeaderRef.current)
   }
 
   const handleLogout = () => {
-    setAuthHeader(null)
+    authHeaderRef.current = null
     setStats(null)
     try {
       sessionStorage.removeItem(SESSION_KEY)
@@ -127,18 +143,7 @@ export function AdminPage() {
     }
   }
 
-  // 로그인 성공 시에만 세션에 저장(401을 캐시하지 않기 위해 fetchStats 밖에서 처리)
-  useEffect(() => {
-    if (authHeader && stats) {
-      try {
-        sessionStorage.setItem(SESSION_KEY, authHeader)
-      } catch {
-        /* ignore */
-      }
-    }
-  }, [authHeader, stats])
-
-  if (!authHeader || (!stats && !loading && !loadError)) {
+  if (!stats) {
     return (
       <div
         style={{
@@ -222,14 +227,6 @@ export function AdminPage() {
     )
   }
 
-  if (!stats) {
-    return (
-      <div style={{ padding: 24, background: IVORY, minHeight: "100%" }}>
-        {loadError ?? "불러오는 중..."}
-      </div>
-    )
-  }
-
   const totalRatings = stats.summary.up + stats.summary.down
   const upRatio = totalRatings > 0 ? Math.round((stats.summary.up / totalRatings) * 100) : null
   const maxCategoryCount = Math.max(1, ...stats.byCategory.map((c) => Math.max(c.up, c.down)))
@@ -243,7 +240,7 @@ export function AdminPage() {
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button
-            onClick={() => authHeader && fetchStats(authHeader)}
+            onClick={handleRefresh}
             disabled={loading}
             style={statBtnStyle(false)}
           >
