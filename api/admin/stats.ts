@@ -6,7 +6,11 @@
 // 색상 검증 스크립트 기준을 통과하도록 맞춰뒀다.
 
 import { neon } from "@neondatabase/serverless"
-import { requireAdminAuth } from "../_lib/adminAuth"
+// package.json의 "type":"module"로 배포 런타임이 네이티브 ESM이라, 상대
+// import는 확장자를 반드시 명시해야 한다(.ts → 컴파일된 .js 기준) — 확장자
+// 없이 두면 로컬 tsc/vite build/vercel dev에서는 통과하지만 실제 배포된
+// 서버리스 함수에서만 ERR_MODULE_NOT_FOUND로 죽는다(실제로 겪은 문제).
+import { requireAdminAuth } from "../_lib/adminAuth.js"
 
 const CATEGORY_ORDER = ["medical", "photo", "counseling", "writing", "travel"] as const
 
