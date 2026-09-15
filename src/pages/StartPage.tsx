@@ -211,12 +211,20 @@ export function StartPage({
                         "background 0.15s, border-color 0.15s, color 0.15s",
                     }}
                     onMouseEnter={(e) => {
-                      if (!isSelected)
-                        (e.currentTarget as HTMLElement).style.background = LIME
+                      if (!isSelected) {
+                        const el = e.currentTarget as HTMLElement
+                        el.style.background = catColor
+                        el.style.borderColor = catColor
+                        el.style.color = "#fff"
+                      }
                     }}
                     onMouseLeave={(e) => {
-                      if (!isSelected)
-                        (e.currentTarget as HTMLElement).style.background = "#fff"
+                      if (!isSelected) {
+                        const el = e.currentTarget as HTMLElement
+                        el.style.background = "#fff"
+                        el.style.borderColor = "#111"
+                        el.style.color = INK
+                      }
                     }}
                   >
                     {item.tag}
