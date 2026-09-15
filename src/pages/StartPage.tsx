@@ -1,7 +1,11 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { LIME, INK, IVORY, CARD_H } from "../theme"
 import { CATEGORIES, CATEGORY_COLORS, type CategoryId } from "../categories"
 import { playArcadeSound } from "../lib/sound"
+import { HashtagToggle } from "../components/HashtagToggle"
+
+const HASHTAG_STAGGER_MS = 80
+const HASHTAG_FADE_MS = 380
 
 // P-공8/P-공17(팀 확정): 자연어 입력은 500자 상한.
 const MAX_INPUT_LENGTH = 500
@@ -54,7 +58,36 @@ export function StartPage({
   const [selectedHashtagIdx, setSelectedHashtagIdx] = useState<number | null>(
     null,
   )
+  const [hashtagsOn, setHashtagsOn] = useState(false)
+  const [hashtagsMounted, setHashtagsMounted] = useState(false)
+  const [hashtagsEntered, setHashtagsEntered] = useState(false)
+  const hashtagExitTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const cat = CATEGORIES.find((c) => c.id === selectedCategory)
+
+  const handleToggleHashtags = () => {
+    if (soundEnabled) playArcadeSound("select")
+    if (hashtagExitTimer.current) clearTimeout(hashtagExitTimer.current)
+    if (hashtagsOn) {
+      // Turning off — fade items out (right-to-left order, computed per-item
+      // below), then unmount the row once the last one finishes.
+      setHashtagsOn(false)
+      setHashtagsEntered(false)
+      const count = cat?.hashtags.length ?? 0
+      hashtagExitTimer.current = setTimeout(
+        () => setHashtagsMounted(false),
+        count * HASHTAG_STAGGER_MS + HASHTAG_FADE_MS,
+      )
+    } else {
+      // Turning on — mount at opacity 0, then flip to entered on the next
+      // frame so the opacity transition actually has something to animate.
+      setHashtagsOn(true)
+      setHashtagsMounted(true)
+      setHashtagsEntered(false)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setHashtagsEntered(true))
+      })
+    }
+  }
 
   const placeholder = cat
     ? cat.placeholder
@@ -181,57 +214,89 @@ export function StartPage({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
+                gap: 10,
                 flexWrap: "wrap",
                 marginBottom: 12,
               }}
             >
-              {cat.hashtags.map((item, idx) => {
-                const isSelected = selectedHashtagIdx === idx
-                const catColor = cat ? CATEGORY_COLORS[cat.id] : LIME
-                return (
-                  <button
-                    key={idx}
-                    className="pill-btn btn-arcade"
-                    onClick={() => {
-                      if (soundEnabled) playArcadeSound("select")
-                      setInputText(item.example)
-                      setSelectedHashtagIdx(idx)
-                    }}
-                    style={{
-                      padding: "6px 16px",
-                      borderRadius: 999,
-                      fontSize: 13.5,
-                      fontWeight: 700,
-                      border: `2px solid ${isSelected ? catColor : "#111"}`,
-                      background: isSelected ? catColor : "#fff",
-                      color: isSelected ? "#fff" : INK,
-                      cursor: "pointer",
-                      fontFamily: "'Noto Sans KR', sans-serif",
-                      transition:
-                        "background 0.15s, border-color 0.15s, color 0.15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        const el = e.currentTarget as HTMLElement
-                        el.style.background = catColor
-                        el.style.borderColor = catColor
-                        el.style.color = "#fff"
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        const el = e.currentTarget as HTMLElement
-                        el.style.background = "#fff"
-                        el.style.borderColor = "#111"
-                        el.style.color = INK
-                      }
-                    }}
-                  >
-                    {item.tag}
-                  </button>
-                )
-              })}
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <HashtagToggle
+                  on={hashtagsOn}
+                  onToggle={handleToggleHashtags}
+                />
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "#888",
+                    fontFamily: "'Noto Sans KR', sans-serif",
+                  }}
+                >
+                  예시 보기
+                </span>
+              </div>
+              {hashtagsMounted && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  {cat.hashtags.map((item, idx) => {
+                    const isSelected = selectedHashtagIdx === idx
+                    const catColor = CATEGORY_COLORS[cat.id]
+                    // Entering: left→right (idx). Exiting: right→left (reversed).
+                    const order = hashtagsOn
+                      ? idx
+                      : cat.hashtags.length - 1 - idx
+                    const delay = order * HASHTAG_STAGGER_MS
+                    return (
+                      <button
+                        key={idx}
+                        className="pill-btn btn-arcade"
+                        onClick={() => {
+                          if (soundEnabled) playArcadeSound("select")
+                          setInputText(item.example)
+                          setSelectedHashtagIdx(idx)
+                        }}
+                        style={{
+                          padding: "6px 16px",
+                          borderRadius: 999,
+                          fontSize: 13.5,
+                          fontWeight: 700,
+                          border: `2px solid ${isSelected ? catColor : "#111"}`,
+                          background: isSelected ? catColor : "#fff",
+                          color: isSelected ? "#fff" : INK,
+                          cursor: "pointer",
+                          fontFamily: "'Noto Sans KR', sans-serif",
+                          opacity: hashtagsEntered ? 1 : 0,
+                          transition: `background 0.15s, border-color 0.15s, color 0.15s, opacity ${HASHTAG_FADE_MS}ms ease-out ${delay}ms`,
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) {
+                            const el = e.currentTarget as HTMLElement
+                            el.style.background = catColor
+                            el.style.borderColor = catColor
+                            el.style.color = "#fff"
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) {
+                            const el = e.currentTarget as HTMLElement
+                            el.style.background = "#fff"
+                            el.style.borderColor = "#111"
+                            el.style.color = INK
+                          }
+                        }}
+                      >
+                        {item.tag}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
 
