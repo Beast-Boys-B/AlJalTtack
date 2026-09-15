@@ -1,7 +1,11 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { LIME, INK, IVORY, CARD_H } from "../theme"
 import { CATEGORIES, CATEGORY_COLORS, type CategoryId } from "../categories"
 import { playArcadeSound } from "../lib/sound"
+import { HashtagToggle } from "../components/HashtagToggle"
+
+const HASHTAG_STAGGER_MS = 45
+const HASHTAG_FADE_MS = 200
 
 // P-공8/P-공17(팀 확정): 자연어 입력은 500자 상한.
 const MAX_INPUT_LENGTH = 500
@@ -35,7 +39,7 @@ export function StartPage({
   destination,
   setDestination,
   onNext,
-  onHome,
+  onBack,
   soundEnabled,
 }: {
   inputText: string
@@ -45,7 +49,7 @@ export function StartPage({
   destination: string
   setDestination: (v: string) => void
   onNext: () => void
-  onHome: () => void
+  onBack: () => void
   soundEnabled: boolean
 }) {
   const [hoveredCategory, setHoveredCategory] = useState<CategoryId | null>(
@@ -54,7 +58,24 @@ export function StartPage({
   const [selectedHashtagIdx, setSelectedHashtagIdx] = useState<number | null>(
     null,
   )
+  const [hashtagsOn, setHashtagsOn] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const cat = CATEGORIES.find((c) => c.id === selectedCategory)
+
+  // Auto-grow the textarea to fit its content instead of scrolling inside it.
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = `${el.scrollHeight}px`
+  }, [inputText])
+
+  // The chips stay mounted at all times (only their opacity toggles) so the
+  // row's height never changes and nothing below it shifts.
+  const handleToggleHashtags = () => {
+    if (soundEnabled) playArcadeSound("select")
+    setHashtagsOn((prev) => !prev)
+  }
 
   const placeholder = cat
     ? cat.placeholder
@@ -102,7 +123,7 @@ export function StartPage({
         }}
       >
         <button
-          onClick={onHome}
+          onClick={onBack}
           className="btn-arcade"
           style={{
             background: "#fff",
@@ -115,7 +136,8 @@ export function StartPage({
             fontSize: 14,
           }}
         >
-          ← 메인 화면
+          <span className="back-label-full">←돌아가기</span>
+          <span className="back-label-short">←</span>
         </button>
         <div
           className="font-pixel"
@@ -180,86 +202,157 @@ export function StartPage({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
+                gap: 10,
                 flexWrap: "wrap",
                 marginBottom: 12,
               }}
             >
-              {cat.hashtags.map((item, idx) => {
-                const isSelected = selectedHashtagIdx === idx
-                const catColor = cat ? CATEGORY_COLORS[cat.id] : LIME
-                return (
-                  <button
-                    key={idx}
-                    className="pill-btn btn-arcade"
-                    onClick={() => {
-                      if (soundEnabled) playArcadeSound("select")
-                      setInputText(item.example)
-                      setSelectedHashtagIdx(idx)
-                    }}
-                    style={{
-                      padding: "6px 16px",
-                      borderRadius: 999,
-                      fontSize: 13.5,
-                      fontWeight: 700,
-                      border: `2px solid ${isSelected ? catColor : "#111"}`,
-                      background: isSelected ? catColor : "#fff",
-                      color: isSelected ? "#fff" : INK,
-                      cursor: "pointer",
-                      fontFamily: "'Noto Sans KR', sans-serif",
-                      transition:
-                        "background 0.15s, border-color 0.15s, color 0.15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        const el = e.currentTarget as HTMLElement
-                        el.style.background = catColor
-                        el.style.borderColor = catColor
-                        el.style.color = "#fff"
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        const el = e.currentTarget as HTMLElement
-                        el.style.background = "#fff"
-                        el.style.borderColor = "#111"
-                        el.style.color = INK
-                      }
-                    }}
-                  >
-                    {item.tag}
-                  </button>
-                )
-              })}
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <HashtagToggle
+                  on={hashtagsOn}
+                  onToggle={handleToggleHashtags}
+                />
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "#888",
+                    fontFamily: "'Noto Sans KR', sans-serif",
+                  }}
+                >
+                  예시 보기
+                </span>
+              </div>
+              {/* Chips stay mounted always (opacity/pointer-events only toggle)
+                  so this row's height never changes and nothing shifts. */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                {cat.hashtags.map((item, idx) => {
+                  const isSelected = selectedHashtagIdx === idx
+                  const catColor = CATEGORY_COLORS[cat.id]
+                  // Entering: left→right (idx). Exiting: right→left (reversed).
+                  const order = hashtagsOn
+                    ? idx
+                    : cat.hashtags.length - 1 - idx
+                  const delay = order * HASHTAG_STAGGER_MS
+                  return (
+                    <button
+                      key={idx}
+                      className="pill-btn btn-arcade"
+                      tabIndex={hashtagsOn ? 0 : -1}
+                      onClick={() => {
+                        if (soundEnabled) playArcadeSound("select")
+                        setInputText(item.example)
+                        setSelectedHashtagIdx(idx)
+                      }}
+                      style={{
+                        padding: "6px 16px",
+                        borderRadius: 999,
+                        fontSize: 13.5,
+                        fontWeight: 700,
+                        border: `2px solid ${isSelected ? catColor : "#111"}`,
+                        background: isSelected ? catColor : "#fff",
+                        color: isSelected ? "#fff" : INK,
+                        cursor: "pointer",
+                        fontFamily: "'Noto Sans KR', sans-serif",
+                        opacity: hashtagsOn ? 1 : 0,
+                        pointerEvents: hashtagsOn ? "auto" : "none",
+                        transition: `background 0.15s, border-color 0.15s, color 0.15s, opacity ${HASHTAG_FADE_MS}ms ease-out ${delay}ms`,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) {
+                          const el = e.currentTarget as HTMLElement
+                          el.style.background = catColor
+                          el.style.borderColor = catColor
+                          el.style.color = "#fff"
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) {
+                          const el = e.currentTarget as HTMLElement
+                          el.style.background = "#fff"
+                          el.style.borderColor = "#111"
+                          el.style.color = INK
+                        }
+                      }}
+                    >
+                      {item.tag}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           )}
 
           {/* Input area */}
-          <textarea
-            value={inputText}
-            onChange={(e) => {
-              setInputText(e.target.value)
-              setSelectedHashtagIdx(null)
-            }}
-            placeholder={placeholder}
-            style={{
-              width: "100%",
-              minHeight: 180,
-              padding: "24px 28px",
-              fontSize: 18,
-              lineHeight: 1.75,
-              border: "3px solid #111",
-              borderRadius: 16,
-              resize: "vertical",
-              outline: "none",
-              fontFamily: "'Noto Sans KR', sans-serif",
-              background: "#fff",
-              color: INK,
-              boxSizing: "border-box",
-              caretColor: LIME,
-              boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
-            }}
-          />
+          <div style={{ position: "relative" }}>
+            <textarea
+              ref={textareaRef}
+              value={inputText}
+              onChange={(e) => {
+                setInputText(e.target.value)
+                setSelectedHashtagIdx(null)
+              }}
+              placeholder={placeholder}
+              rows={1}
+              style={{
+                width: "100%",
+                minHeight: 180,
+                padding: "24px 64px 64px 28px",
+                fontSize: 18,
+                lineHeight: 1.75,
+                border: "3px solid #111",
+                borderRadius: 16,
+                resize: "none",
+                overflow: "hidden",
+                outline: "none",
+                fontFamily: "'Noto Sans KR', sans-serif",
+                background: "#fff",
+                color: INK,
+                boxSizing: "border-box",
+                caretColor: LIME,
+                boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
+              }}
+            />
+            {/* 프롬프트 완성하기 — 입력창 우측 하단의 동그란 화살표 버튼 */}
+            <button
+              onClick={() => {
+                if (canProceed) {
+                  if (soundEnabled) playArcadeSound("powerup")
+                  onNext()
+                }
+              }}
+              className="btn-arcade"
+              title={ctaLabel}
+              aria-label={ctaLabel}
+              style={{
+                position: "absolute",
+                right: 16,
+                bottom: 20,
+                width: 34,
+                height: 34,
+                borderRadius: "50%",
+                border: "2.5px solid #111",
+                background: canProceed ? LIME : "#E8E8E4",
+                color: canProceed ? INK : "#999",
+                fontSize: 15,
+                fontWeight: 900,
+                cursor: canProceed ? "pointer" : "not-allowed",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
+              }}
+            >
+              →
+            </button>
+          </div>
 
           {/* 500자 상한(P-공8/P-공17) */}
           <div
@@ -274,6 +367,21 @@ export function StartPage({
             {charCount} / {MAX_INPUT_LENGTH}
             {overLimit ? " · 500자를 넘었어요" : ""}
           </div>
+
+          {/* 진행 불가 사유 안내(카테고리 미선택 등) — 버튼이 입력창으로 옮겨오며 함께 이동 */}
+          {!canProceed && trimmedLength > 0 && (
+            <p
+              className="animate-fade-in font-pixel"
+              style={{
+                textAlign: "right",
+                fontSize: 11,
+                color: "#555",
+                margin: "4px 0 0",
+              }}
+            >
+              {ctaLabel}
+            </p>
+          )}
 
           {/* 욕설 블랙리스트 경고(P-공9, MVP 임시 목록 — TC-공6 [?] 참고) */}
           {hasProfanity && (
@@ -471,64 +579,7 @@ export function StartPage({
         </div>
       </div>
 
-      {/* CTA */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          padding: "36px 40px 70px",
-        }}
-      >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 820,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 16,
-          }}
-        >
-          <button
-            onClick={() => {
-              if (canProceed) {
-                if (soundEnabled) playArcadeSound("powerup")
-                onNext()
-              }
-            }}
-            className="btn-arcade pulse-lime"
-            style={{
-              background: canProceed ? LIME : "#E8E8E4",
-              color: canProceed ? INK : "#888",
-              fontWeight: 900,
-              fontSize: 19,
-              padding: "18px 64px",
-              borderRadius: 999,
-              border: "3px solid #111",
-              cursor: canProceed ? "pointer" : "not-allowed",
-              fontFamily: "'Noto Sans KR', sans-serif",
-              opacity: canProceed ? 1 : 0.6,
-            }}
-          >
-            {ctaLabel}
-          </button>
-
-          {!selectedCategory && inputText.trim() && (
-            <p
-              className="animate-fade-in font-pixel"
-              style={{
-                textAlign: "center",
-                fontSize: 11,
-                color: "#555",
-                margin: 0,
-              }}
-            >
-              PLEASE SELECT A CATEGORY ABOVE 👆
-            </p>
-          )}
-        </div>
-      </div>
+      <div style={{ height: 40 }} />
     </div>
   )
 }
