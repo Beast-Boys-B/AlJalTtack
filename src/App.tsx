@@ -10,6 +10,7 @@ type Page = 0 | 1 | 2 | 3
 
 export default function App() {
   const [page, setPage] = useState<Page>(0)
+  const [previousPage, setPreviousPage] = useState<Page>(0)
   const [inputText, setInputText] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | null>(
     null,
@@ -31,7 +32,16 @@ export default function App() {
   const goToCompare = () => {
     if (inputText.trim() && selectedCategory) setPage(2)
   }
-  const goToLibrary = () => setPage(3)
+  const goToLibrary = () => {
+    if (page === 3) {
+      setPage(previousPage)
+    } else {
+      setPreviousPage(page)
+      setPage(3)
+    }
+  }
+  const goBackFromLibrary = () => setPage(previousPage)
+  const goToLanding = () => setPage(0)
   const goBack = () => setPage(1)
   // 메인 화면(랜딩)으로 — 헤더 "← 메인 화면"/홈 버튼 전용.
   const goHome = () => {
@@ -98,7 +108,7 @@ export default function App() {
               destination={destination}
               setDestination={setDestination}
               onNext={goToCompare}
-              onHome={goHome}
+              onBack={goToLanding}
               soundEnabled={soundEnabled}
             />
           </div>
@@ -127,7 +137,7 @@ export default function App() {
             style={{ height: "100%", overflowY: "auto" }}
           >
             <LibraryPage
-              onHome={goHome}
+              onBack={goBackFromLibrary}
               onStartWithExample={handleStartWithExample}
               soundEnabled={soundEnabled}
             />

@@ -35,7 +35,7 @@ export function StartPage({
   destination,
   setDestination,
   onNext,
-  onHome,
+  onBack,
   soundEnabled,
 }: {
   inputText: string
@@ -45,7 +45,7 @@ export function StartPage({
   destination: string
   setDestination: (v: string) => void
   onNext: () => void
-  onHome: () => void
+  onBack: () => void
   soundEnabled: boolean
 }) {
   const [hoveredCategory, setHoveredCategory] = useState<CategoryId | null>(
@@ -102,7 +102,7 @@ export function StartPage({
         }}
       >
         <button
-          onClick={onHome}
+          onClick={onBack}
           className="btn-arcade"
           style={{
             background: "#fff",
@@ -115,7 +115,8 @@ export function StartPage({
             fontSize: 14,
           }}
         >
-          ← 메인 화면
+          <span className="back-label-full">←돌아가기</span>
+          <span className="back-label-short">←</span>
         </button>
         <div
           className="font-pixel"

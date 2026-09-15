@@ -154,6 +154,10 @@ body {
 .pill-btn:hover { transform: translateY(-2px); }
 .pill-btn:active { transform: translateY(1px); }
 
+/* Back button label — full text on desktop, arrow-only on mobile */
+.back-label-full { display: inline; }
+.back-label-short { display: none; }
+
 /* Responsive Mobile Layout Adjustments */
 @media (max-width: 1024px) {
   .hero-grid {
@@ -193,4 +197,6 @@ body {
     width: 100% !important;
     max-width: 100% !important;
   }
+  .back-label-full { display: none !important; }
+  .back-label-short { display: inline !important; }
 }
