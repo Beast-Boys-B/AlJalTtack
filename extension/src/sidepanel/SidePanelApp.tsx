@@ -33,6 +33,7 @@ const SEND_TARGETS: SendTarget[] = [
     urlPatterns: ["https://chatgpt.com/*", "https://chat.openai.com/*"],
   },
   { id: "gemini", label: "제미니", icon: "🔵", urlPatterns: ["https://gemini.google.com/*"] },
+  { id: "grok", label: "그록", icon: "⚫", urlPatterns: ["https://grok.x.ai/*", "https://grok.com/*"] },
 ]
 
 type SendStatus = "sent" | "no-tab" | "error"
