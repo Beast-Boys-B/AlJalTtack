@@ -39,8 +39,8 @@ export function HashtagToggle({
           inset: 0,
           borderRadius: 999,
           boxSizing: "border-box",
-          border: "2px solid #3A3A3A",
-          background: "linear-gradient(180deg, #B8B8B8 0%, #8A8A8A 100%)",
+          border: "2px solid #929292",
+          background: "linear-gradient(180deg, #CCCCCC 0%, #B4B4B4 100%)",
           opacity: on ? 0 : 1,
           transition: "opacity 0.35s ease",
         }}
@@ -70,6 +70,7 @@ export function HashtagToggle({
             on ? TRACK_W - KNOB_W - MARGIN * 2 : 0
           }px)`,
           transition: "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+          filter: "brightness(1.12)",
         }}
       />
     </button>
