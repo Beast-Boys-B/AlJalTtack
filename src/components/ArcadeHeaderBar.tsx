@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { LIME, INK } from "../theme"
 
 export function ArcadeHeaderBar({
@@ -7,6 +8,7 @@ export function ArcadeHeaderBar({
   score,
   onHome,
   onLibrary,
+  libraryActive,
 }: {
   crtEnabled: boolean
   setCrtEnabled: (v: boolean) => void
@@ -14,7 +16,14 @@ export function ArcadeHeaderBar({
   score: number
   onHome?: () => void
   onLibrary?: () => void
+  libraryActive?: boolean
 }) {
+  // Shrinks while the mouse/finger is physically held down, grows back on
+  // release — to whichever resting scale matches the (possibly just-toggled)
+  // libraryActive state, since the click itself fires on mouseup.
+  const [libraryHeld, setLibraryHeld] = useState(false)
+  const libraryRestScale = libraryActive ? 0.94 : 1
+  const libraryScale = libraryHeld ? libraryRestScale - 0.08 : libraryRestScale
   return (
     <div
       style={{
@@ -111,10 +120,17 @@ export function ArcadeHeaderBar({
         </button>
         <button
           onClick={onLibrary}
+          onMouseDown={() => setLibraryHeld(true)}
+          onMouseUp={() => setLibraryHeld(false)}
+          onMouseLeave={() => setLibraryHeld(false)}
+          onTouchStart={() => setLibraryHeld(true)}
+          onTouchEnd={() => setLibraryHeld(false)}
           style={{
-            background: LIME,
-            color: INK,
-            border: "1px solid #444",
+            background: libraryActive
+              ? "linear-gradient(180deg, #A22857 0%, #E5307A 100%)"
+              : "linear-gradient(180deg, #D7FC53 0%, #98AC3D 100%)",
+            color: libraryActive ? "#fff" : INK,
+            border: "2px solid #044444",
             padding: "4px 10px",
             fontSize: 11,
             fontWeight: 700,
@@ -123,6 +139,12 @@ export function ArcadeHeaderBar({
             display: "flex",
             alignItems: "center",
             gap: 4,
+            boxShadow: libraryActive
+              ? "inset 0 2px 3px rgba(0,0,0,0.45)"
+              : "0 3px 0 rgba(0,0,0,0.35)",
+            transform: `scale(${libraryScale})`,
+            transition:
+              "background 0.1s ease-out, box-shadow 0.1s ease-out, transform 0.15s ease-out",
           }}
           className="font-pixel"
         >

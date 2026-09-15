@@ -82,6 +82,7 @@ export default function App() {
         score={score}
         onHome={goHome}
         onLibrary={goToLibrary}
+        libraryActive={page === 3}
       />
       <div style={{ flex: 1, overflow: "hidden" }}>
         {page === 0 && (
