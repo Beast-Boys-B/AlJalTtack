@@ -10,11 +10,11 @@ import {
 import { playArcadeSound } from "../lib/sound"
 
 export function LibraryPage({
-  onHome,
+  onBack,
   onStartWithExample,
   soundEnabled,
 }: {
-  onHome: () => void
+  onBack: () => void
   onStartWithExample: (categoryId: CategoryId, example: string) => void
   soundEnabled: boolean
 }) {
@@ -64,7 +64,7 @@ export function LibraryPage({
         }}
       >
         <button
-          onClick={onHome}
+          onClick={onBack}
           className="btn-arcade"
           style={{
             background: "#fff",
@@ -77,7 +77,8 @@ export function LibraryPage({
             fontSize: 14,
           }}
         >
-          ← 메인 화면
+          <span className="back-label-full">←돌아가기</span>
+          <span className="back-label-short">←</span>
         </button>
         <div
           style={{ display: "flex", alignItems: "center", gap: 10 }}

@@ -151,3 +151,4 @@
 # Overrides the *.png rule above since a later match wins.
 # ---------------------------------------------------------------------------
 extension/icons/*.png filter= diff= merge= -text
+src/assets/toggle/*.png filter= diff= merge= -text
