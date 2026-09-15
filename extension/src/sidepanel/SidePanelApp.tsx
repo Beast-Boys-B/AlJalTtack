@@ -38,6 +38,16 @@ const SEND_TARGETS: SendTarget[] = [
 
 type SendStatus = "sent" | "no-tab" | "error"
 
+// 방향 조사 로/으로 — 받침 있는 명사("그록") 뒤엔 "으로", 없는 명사
+// ("클로드", "챗GPT", "제미니") 뒤엔 "로". 유니코드 완성형 한글
+// 코드포인트에서 받침 인덱스((code - 0xAC00) % 28)로 판별한다.
+function withRo(label: string): string {
+  const lastChar = label.trim().slice(-1)
+  const code = lastChar.charCodeAt(0)
+  const hasBatchim = code >= 0xac00 && code <= 0xd7a3 && (code - 0xac00) % 28 !== 0
+  return `${label}${hasBatchim ? "으로" : "로"}`
+}
+
 function buildInitialAxes(text: string, category: (typeof CATEGORIES)[number]) {
   const detected = detectCategoryAxes(text, category)
   const init: Record<string, string> = {}
@@ -240,7 +250,7 @@ export function SidePanelApp() {
               disabled={!refined}
               style={actionBtnStyle(true, !refined)}
             >
-              {target.icon} {target.label}로
+              {target.icon} {withRo(target.label)}
             </button>
           ))}
         </div>
@@ -263,7 +273,7 @@ export function SidePanelApp() {
           }
           return (
             <div key={target.id} style={statusStyle("#d03b3b")}>
-              {target.label}로 전달에 실패했어요. 탭을 한 번 새로고침한 뒤 다시 시도해주세요.
+              {withRo(target.label)} 전달에 실패했어요. 탭을 한 번 새로고침한 뒤 다시 시도해주세요.
             </div>
           )
         })}
