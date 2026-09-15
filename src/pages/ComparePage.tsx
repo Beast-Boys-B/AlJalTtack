@@ -353,7 +353,7 @@ export function ComparePage({
             value={leftText}
             onChange={(e) => handleLeftChange(e.target.value)}
             style={{
-              height: 200,
+              height: 280,
               flexShrink: 0,
               padding: "14px 16px",
               fontSize: 14.5,
@@ -370,18 +370,14 @@ export function ComparePage({
             }}
           />
 
-          {/* 세션 부가기능 영역 — 원문 입력칸을 줄여서 생긴 공간. 항상 있는 것(고정
-              규칙·평가)은 위, 어쩌다 뜨는 것(힌트·설문)은 아래로. 내용이 적을 땐
-              세로 중앙 정렬로 여백을 자연스럽게 흡수하고, 힌트/설문까지 겹쳐서
-              공간이 모자라면 이 영역 안에서만 스크롤된다(그리드 행 전체가
-              늘어나 다른 칸을 밀어내는 문제 방지). */}
+          {/* 원문 입력칸을 줄여서 생긴 공간 — 상시 존재하는 것(고정 규칙·평가)만
+              여기 담는다. 힌트/설문(가끔 뜨는 것)은 레이아웃에 자리를 차지하지
+              않도록 화면에 떠있는 팝업으로 따로 뺐다(아래 참고). */}
           <div
             style={{
-              flex: 1,
               display: "flex",
               flexDirection: "column",
-              justifyContent: "center",
-              gap: 12,
+              gap: 10,
               overflowY: "auto",
               minHeight: 0,
             }}
@@ -545,155 +541,6 @@ export function ComparePage({
                 )}
               </div>
             </div>
-
-            {showHelpCard && (
-              <div
-                className="animate-slide-in"
-                style={{
-                  flexShrink: 0,
-                  background: INK,
-                  color: "#fff",
-                  borderRadius: 12,
-                  padding: "18px 16px",
-                  position: "relative",
-                  border: `2px solid ${LIME}`,
-                  boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
-                }}
-              >
-                <button
-                  onClick={() => setShowHelpCard(false)}
-                  style={{
-                    position: "absolute",
-                    top: 10,
-                    right: 12,
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "#888",
-                    fontSize: 16,
-                  }}
-                >
-                  ×
-                </button>
-                <div style={{ fontSize: 20, marginBottom: 6 }}>💡</div>
-                <div
-                  className="font-pixel"
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: LIME,
-                    marginBottom: 6,
-                  }}
-                >
-                  ARCADE HINT
-                </div>
-                <p
-                  style={{
-                    fontSize: 13,
-                    color: "#DDD",
-                    lineHeight: 1.6,
-                    margin: 0,
-                  }}
-                >
-                  세부 조정을 이렇게 활용해보세요:
-                </p>
-                <div
-                  style={{
-                    marginTop: 12,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 8,
-                  }}
-                >
-                  {category.axes.map((axis) => (
-                    <div
-                      key={axis.id}
-                      style={{ fontSize: 12, color: "#AAA", lineHeight: 1.5 }}
-                    >
-                      <span style={{ color: LIME, fontWeight: 700 }}>
-                        • {axis.label}
-                      </span>
-                      : {axis.hint ?? "옵션을 바꿔가며 결과가 어떻게 달라지는지 비교해보세요."}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {showSurveyCard && (
-              <div
-                className="animate-slide-in"
-                style={{
-                  flexShrink: 0,
-                  background: "#fff",
-                  color: INK,
-                  borderRadius: 12,
-                  padding: "16px 16px",
-                  position: "relative",
-                  border: "2px solid #111",
-                  boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
-                }}
-              >
-                <button
-                  onClick={() => setShowSurveyCard(false)}
-                  style={{
-                    position: "absolute",
-                    top: 10,
-                    right: 12,
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "#888",
-                    fontSize: 16,
-                  }}
-                  aria-label="닫기"
-                >
-                  ×
-                </button>
-                <p
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: INK,
-                    margin: "0 20px 10px 0",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  조정을 몇 번 반복하셨네요. 어떤 점이 어려우셨나요?
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {SURVEY_REASONS.map((reason) => {
-                    const selected = surveyReason === reason
-                    const disabled = surveyReason !== null
-                    return (
-                      <button
-                        key={reason}
-                        disabled={disabled}
-                        onClick={() => sendSurvey(reason)}
-                        style={{
-                          textAlign: "left",
-                          background: selected ? LIME : "#FAFAF8",
-                          border: "1.5px solid #111",
-                          borderRadius: 8,
-                          padding: "7px 10px",
-                          fontSize: 12.5,
-                          fontWeight: selected ? 700 : 500,
-                          cursor: disabled ? "default" : "pointer",
-                          opacity: disabled && !selected ? 0.45 : 1,
-                        }}
-                      >
-                        {reason}
-                      </button>
-                    )
-                  })}
-                </div>
-                {surveyReason && (
-                  <p style={{ fontSize: 12, color: "#666", margin: "10px 0 0" }}>
-                    소중한 의견 감사합니다
-                  </p>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
@@ -1210,6 +1057,171 @@ export function ComparePage({
           ← 뒤로가기
         </button>
       </footer>
+
+      {/* 힌트/설문 팝업 — 레이아웃 흐름 밖에 떠서 스크롤을 따라다니는
+          고정 위치 알림(가끔만 뜨는 것이라 레이아웃에 자리를 차지하지 않는다). */}
+      {(showHelpCard || showSurveyCard) && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 20,
+            right: 20,
+            zIndex: 50,
+            width: 320,
+            maxWidth: "calc(100vw - 40px)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
+          {showHelpCard && (
+            <div
+              className="animate-slide-in"
+              style={{
+                background: INK,
+                color: "#fff",
+                borderRadius: 12,
+                padding: "18px 16px",
+                position: "relative",
+                border: `2px solid ${LIME}`,
+                boxShadow: "4px 4px 0 rgba(17,17,17,0.4)",
+              }}
+            >
+              <button
+                onClick={() => setShowHelpCard(false)}
+                style={{
+                  position: "absolute",
+                  top: 10,
+                  right: 12,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#888",
+                  fontSize: 16,
+                }}
+              >
+                ×
+              </button>
+              <div style={{ fontSize: 20, marginBottom: 6 }}>💡</div>
+              <div
+                className="font-pixel"
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: LIME,
+                  marginBottom: 6,
+                }}
+              >
+                ARCADE HINT
+              </div>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "#DDD",
+                  lineHeight: 1.6,
+                  margin: 0,
+                }}
+              >
+                세부 조정을 이렇게 활용해보세요:
+              </p>
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                }}
+              >
+                {category.axes.map((axis) => (
+                  <div
+                    key={axis.id}
+                    style={{ fontSize: 12, color: "#AAA", lineHeight: 1.5 }}
+                  >
+                    <span style={{ color: LIME, fontWeight: 700 }}>
+                      • {axis.label}
+                    </span>
+                    : {axis.hint ?? "옵션을 바꿔가며 결과가 어떻게 달라지는지 비교해보세요."}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {showSurveyCard && (
+            <div
+              className="animate-slide-in"
+              style={{
+                background: "#fff",
+                color: INK,
+                borderRadius: 12,
+                padding: "16px 16px",
+                position: "relative",
+                border: "2px solid #111",
+                boxShadow: "4px 4px 0 rgba(17,17,17,0.4)",
+              }}
+            >
+              <button
+                onClick={() => setShowSurveyCard(false)}
+                style={{
+                  position: "absolute",
+                  top: 10,
+                  right: 12,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#888",
+                  fontSize: 16,
+                }}
+                aria-label="닫기"
+              >
+                ×
+              </button>
+              <p
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: INK,
+                  margin: "0 20px 10px 0",
+                  lineHeight: 1.5,
+                }}
+              >
+                조정을 몇 번 반복하셨네요. 어떤 점이 어려우셨나요?
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {SURVEY_REASONS.map((reason) => {
+                  const selected = surveyReason === reason
+                  const disabled = surveyReason !== null
+                  return (
+                    <button
+                      key={reason}
+                      disabled={disabled}
+                      onClick={() => sendSurvey(reason)}
+                      style={{
+                        textAlign: "left",
+                        background: selected ? LIME : "#FAFAF8",
+                        border: "1.5px solid #111",
+                        borderRadius: 8,
+                        padding: "7px 10px",
+                        fontSize: 12.5,
+                        fontWeight: selected ? 700 : 500,
+                        cursor: disabled ? "default" : "pointer",
+                        opacity: disabled && !selected ? 0.45 : 1,
+                      }}
+                    >
+                      {reason}
+                    </button>
+                  )
+                })}
+              </div>
+              {surveyReason && (
+                <p style={{ fontSize: 12, color: "#666", margin: "10px 0 0" }}>
+                  소중한 의견 감사합니다
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
