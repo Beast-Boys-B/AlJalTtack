@@ -1,5 +1,10 @@
 node_modules/
 dist/
+# 크롬 웹스토어에 정식 등록은 안 하고 압축해제된 확장 프로그램 폴더
+# 자체를 공유하려는 목적이라, 확장 빌드 산출물만 예외로 커밋한다
+# (웹앱의 루트 dist/는 Vercel이 매번 새로 빌드하니 그대로 무시).
+!extension/dist/
+!extension/dist/**
 build/
 .cache/
 .env*
