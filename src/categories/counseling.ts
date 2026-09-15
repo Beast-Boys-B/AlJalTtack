@@ -72,13 +72,20 @@ export const category: Category = {
 
 export const color = "#10B981" // emerald
 
+// 화면(FIXED RULE 박스)에 그대로 노출되는 문구 — prd 고정_규칙의 조건/응답을
+// label/message로 나눠 담는다(응답 텍스트는 prd와 동일하게 유지).
 export const fixedRules: FixedRule[] = [
   {
-    label: "항상",
+    label: "위기 신호 시",
     message:
-      "사용자가 자해, 자살, 심각한 위기 신호를 보이면 위의 스타일 설정과 관계없이 즉시 안전을 최우선으로 하고 전문가의 도움을 받을 것을 권유하세요.",
+      "지금 힘드시다면 혼자 견디지 마시고 자살예방상담전화 109(24시간, 무료)로 꼭 전화해보세요.",
   },
 ]
+
+// 정제 프롬프트([안전 규칙] 줄)에 실려 AI에게 전달되는 지시문 — 위 fixedRules와
+// 목적이 달라(사용자용 안내 문구 vs. 응답 AI에게 주는 지시) 별도로 관리한다.
+const SAFETY_PROMPT_INSTRUCTION =
+  "사용자가 위기 신호를 보이면 위의 스타일 설정과 관계없이 즉시 안전을 최우선으로 하고 전문가의 도움을 받을 것을 권유하세요."
 
 // ---------------------------------------------------------------------------
 // 축1 — 상담 주제별 페르소나 (6택, 다중 신호 가능)
@@ -513,5 +520,5 @@ export function generatePrompt(
   // (newPrompt.includes(option)), 페르소나 이름·효과 문구만으로는 옵션 원문이
   // 결과에 안 남는 축(topic 6택 중 4개, style·intervention 전부)이 있었다 —
   // [축 이름] 라벨 줄로 원문을 그대로 남겨서 고친다(medical.ts와 동일 방식).
-  return `다음 고민에 "${persona.personaLabel}"로 답변해 주세요.\n\n[상담 주제] ${topic}\n[상담 스타일] ${AXIS2_DISPLAY[style]}\n[개입 방식] ${AXIS3_DISPLAY[mode]}\n\n[페르소나 지침]\n• ${persona.effect}\n\n[상담 방식 지침]\n• ${styleInstruction}\n\n[상황]\n${text}\n\n[안전 규칙]\n• ${fixedRules[0].message}`
+  return `다음 고민에 "${persona.personaLabel}"로 답변해 주세요.\n\n[상담 주제] ${topic}\n[상담 스타일] ${AXIS2_DISPLAY[style]}\n[개입 방식] ${AXIS3_DISPLAY[mode]}\n\n[페르소나 지침]\n• ${persona.effect}\n\n[상담 방식 지침]\n• ${styleInstruction}\n\n[상황]\n${text}\n\n[안전 규칙]\n• ${SAFETY_PROMPT_INSTRUCTION}`
 }
