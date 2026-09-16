@@ -1,15 +1,23 @@
 import { useState } from "react"
 import { CATEGORIES, type CategoryId } from "./categories"
 import { ArcadeHeaderBar } from "./components/ArcadeHeaderBar"
+import { useIsMobile } from "./lib/useIsMobile"
 import { LandingPage } from "./pages/LandingPage"
 import { StartPage } from "./pages/StartPage"
 import { ComparePage } from "./pages/ComparePage"
 import { LibraryPage } from "./pages/LibraryPage"
+import { MobileStartPage } from "./pages/MobileStartPage"
+import { MobileComparePage } from "./pages/MobileComparePage"
+import { MobileLibraryPage } from "./pages/MobileLibraryPage"
 
 type Page = 0 | 1 | 2 | 3
 
 export default function App() {
-  const [page, setPage] = useState<Page>(0)
+  // 모바일 폭에는 랜딩 페이지가 없다(기획 확정) — 첫 페이지를 바로 입력 화면(1)으로
+  // 연다. isMobile은 matchMedia 기반이라 마운트 시점에 동기적으로 값을 알 수 있어
+  // 랜딩 화면이 잠깐 보였다 사라지는 깜빡임이 없다.
+  const isMobile = useIsMobile()
+  const [page, setPage] = useState<Page>(() => (isMobile ? 1 : 0))
   const [previousPage, setPreviousPage] = useState<Page>(0)
   const [inputText, setInputText] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | null>(
@@ -44,11 +52,12 @@ export default function App() {
   const goToLanding = () => setPage(0)
   const goBack = () => setPage(1)
   // 메인 화면(랜딩)으로 — 헤더 "← 메인 화면"/홈 버튼 전용.
+  // 모바일은 랜딩 페이지가 없으므로 "메인"은 입력 화면(1)을 뜻한다.
   const goHome = () => {
     setInputText("")
     setSelectedCategory(null)
     setDestination("")
-    setPage(0)
+    setPage(isMobile ? 1 : 0)
   }
   // F-공18(팀 확정): 페이지2 "🔄 처음으로 돌아가기"는 랜딩이 아니라
   // 페이지1(입력화면)로 이동하며 완전 리셋한다 — goHome과는 목적지가 다르다.
@@ -98,20 +107,37 @@ export default function App() {
             className="animate-fade-up"
             style={{ height: "100%", overflowY: "auto" }}
           >
-            <StartPage
-              inputText={inputText}
-              setInputText={setInputText}
-              selectedCategory={selectedCategory}
-              setSelectedCategory={(v) => {
-                setSelectedCategory(v)
-                if (v !== "travel") setDestination("")
-              }}
-              destination={destination}
-              setDestination={setDestination}
-              onNext={goToCompare}
-              onBack={goToLanding}
-              soundEnabled={soundEnabled}
-            />
+            {isMobile ? (
+              <MobileStartPage
+                inputText={inputText}
+                setInputText={setInputText}
+                selectedCategory={selectedCategory}
+                setSelectedCategory={(v) => {
+                  setSelectedCategory(v)
+                  if (v !== "travel") setDestination("")
+                }}
+                destination={destination}
+                setDestination={setDestination}
+                onNext={goToCompare}
+                onLibrary={goToLibrary}
+                soundEnabled={soundEnabled}
+              />
+            ) : (
+              <StartPage
+                inputText={inputText}
+                setInputText={setInputText}
+                selectedCategory={selectedCategory}
+                setSelectedCategory={(v) => {
+                  setSelectedCategory(v)
+                  if (v !== "travel") setDestination("")
+                }}
+                destination={destination}
+                setDestination={setDestination}
+                onNext={goToCompare}
+                onBack={goToLanding}
+                soundEnabled={soundEnabled}
+              />
+            )}
           </div>
         )}
         {page === 2 && cat && (
@@ -120,18 +146,43 @@ export default function App() {
             className="animate-fade-up"
             style={{ height: "100%", overflowY: "auto" }}
           >
-            <ComparePage
-              inputText={inputText}
-              category={cat}
-              destination={destination}
-              onBack={goBack}
-              onReset={goReset}
+            {isMobile ? (
+              <MobileComparePage
+                inputText={inputText}
+                category={cat}
+                destination={destination}
+                onBack={goBack}
+                onReset={goReset}
+                soundEnabled={soundEnabled}
+                addScore={addScore}
+              />
+            ) : (
+              <ComparePage
+                inputText={inputText}
+                category={cat}
+                destination={destination}
+                onBack={goBack}
+                onReset={goReset}
+                soundEnabled={soundEnabled}
+                addScore={addScore}
+              />
+            )}
+          </div>
+        )}
+        {page === 3 && isMobile && (
+          <div
+            key="library"
+            className="animate-fade-up"
+            style={{ height: "100%", overflowY: "auto" }}
+          >
+            <MobileLibraryPage
+              onHome={goBackFromLibrary}
+              onStartWithExample={handleStartWithExample}
               soundEnabled={soundEnabled}
-              addScore={addScore}
             />
           </div>
         )}
-        {page === 3 && (
+        {page === 3 && !isMobile && (
           <div
             key="library"
             className="animate-fade-up"

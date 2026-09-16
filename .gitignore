@@ -27,3 +27,8 @@ logs/
 
 .vercel
 .env*
+
+# 모바일 반응형 작업용 피그마 메이크 원본 사본(레이아웃 참고용) — 실제
+# 화면은 src/pages/Mobile*.tsx로 이식 완료했고, 이 폴더 자체는 독립된
+# Vite 프로젝트라 본 리포에 커밋하지 않는다(draft/src/proto-design과 동일 취급).
+/mobile/

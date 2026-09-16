@@ -113,6 +113,22 @@ body {
   50% { filter: drop-shadow(0 0 20px rgba(204,255,0,1)); }
 }
 
+/* Copy-button confetti burst — used by MobileComparePage's copy button
+   (ported from mobile/src/index.css, the Figma mobile mockup's stylesheet). */
+@keyframes popConfetti {
+  0% { transform: translate(0, 0) scale(0.3) rotate(0deg); opacity: 1; }
+  60% { transform: translate(var(--tx, 0px), var(--ty, -20px)) scale(1.2) rotate(180deg); opacity: 1; }
+  100% { transform: translate(calc(var(--tx, 0px) * 1.5), calc(var(--ty, -20px) * 1.5)) scale(0.5) rotate(360deg); opacity: 0; }
+}
+
+.confetti-particle {
+  position: absolute;
+  pointer-events: none;
+  font-size: 15px;
+  animation: popConfetti 0.75s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+  z-index: 99;
+}
+
 .animate-fade-up   { animation: fadeUp 0.4s ease-out both; }
 .animate-fade-in   { animation: fadeIn 0.3s ease-out both; }
 .animate-slide-in  { animation: slideInRight 0.4s ease-out both; }
