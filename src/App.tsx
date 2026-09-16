@@ -93,6 +93,7 @@ export default function App() {
         onHome={goHome}
         onLibrary={goToLibrary}
         libraryActive={page === 3}
+        isMobile={isMobile}
       />
       <div style={{ flex: 1, overflow: "hidden" }}>
         {page === 0 && (
