@@ -126,9 +126,12 @@ export function ArcadeHeaderBar({
           onTouchStart={() => setLibraryHeld(true)}
           onTouchEnd={() => setLibraryHeld(false)}
           style={{
+            // Hard 50/50 split (not a smooth blend) — the darker half reads
+            // as a cast shadow, giving a convex/"popped out" look: shadow on
+            // top when red (active), shadow on the bottom when green (off).
             background: libraryActive
-              ? "linear-gradient(180deg, #A22857 0%, #E5307A 100%)"
-              : "linear-gradient(180deg, #D7FC53 0%, #98AC3D 100%)",
+              ? "linear-gradient(180deg, #A22857 0%, #A22857 50%, #E5307A 50%, #E5307A 100%)"
+              : "linear-gradient(180deg, #D7FC53 0%, #D7FC53 50%, #98AC3D 50%, #98AC3D 100%)",
             color: libraryActive ? "#fff" : INK,
             border: "2px solid #044444",
             padding: "4px 10px",
@@ -148,7 +151,7 @@ export function ArcadeHeaderBar({
           }}
           className="font-pixel"
         >
-          📚 LIBRARY
+          📚 SAMPLE
         </button>
       </div>
     </div>
