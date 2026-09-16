@@ -36,7 +36,7 @@ export function ArcadeHeaderBar({
   // release — to whichever resting scale matches the (possibly just-toggled)
   // libraryActive state, since the click itself fires on mouseup.
   const [libraryHeld, setLibraryHeld] = useState(false)
-  const libraryRestScale = libraryActive ? 0.94 : 1
+  const libraryRestScale = libraryActive ? 0.96 : 1
   const libraryScale = libraryHeld ? libraryRestScale - 0.08 : libraryRestScale
 
   // Measure the CRT button's actual rendered height so the *visible pill*
