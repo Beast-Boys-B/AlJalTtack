@@ -239,49 +239,7 @@ export function MobileComparePage({
 
       {/* Single scrollable column */}
       <div style={{ flex: 1, overflowY: "auto" }} className="scrollbar-hide">
-        {/* ① 고정 규칙 */}
-        {fixedRules.length > 0 && (
-          <div style={{ padding: "12px 16px 0" }}>
-            <div
-              style={{
-                background: "#FFF5F5",
-                border: "1.5px solid #F87171",
-                borderRadius: 10,
-                padding: "10px 14px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-              }}
-            >
-              <div className="font-pixel" style={{ fontSize: 9, color: "#DC2626" }}>
-                ⚠ FIXED RULE
-              </div>
-              {fixedRules.map((rule, i) => (
-                <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start" }}>
-                  <span
-                    style={{
-                      background: "#DC2626",
-                      color: "#fff",
-                      fontSize: 10,
-                      fontWeight: 800,
-                      padding: "1px 6px",
-                      borderRadius: 4,
-                      whiteSpace: "nowrap",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {rule.label}
-                  </span>
-                  <p style={{ fontSize: 11, color: "#B91C1C", margin: 0, fontWeight: 600, lineHeight: 1.5 }}>
-                    {rule.message}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ② 자연어 입력칸 — 라벨줄+textarea를 position:relative 기준자로 묶어서
+        {/* ① 자연어 입력칸 — 라벨줄+textarea를 position:relative 기준자로 묶어서
             힌트 팝업을 이 박스 아랫변(top:100%)에 순수 CSS로 맞물리게 한다(데스크톱
             ComparePage.tsx와 동일 기법 — JS 위치 재계산 방식은 쓰지 않는다). */}
         <div style={{ padding: "12px 16px 0", position: "relative" }}>
@@ -384,7 +342,7 @@ export function MobileComparePage({
           )}
         </div>
 
-        {/* ③ 완성된 프롬프트 — copy button */}
+        {/* ② 완성된 프롬프트 — copy button */}
         {/* [2026-09-16 수정] 원래 sticky(top:0)였으나, 텍스트 박스(최대 300px)+
             재조정 카운트까지 이 블록 전체가 상단에 들러붙어 아래 축 버튼·AI
             서비스 링크·피드백을 가리는 문제가 있어 일반 흐름(sticky 아님)으로
@@ -571,7 +529,7 @@ export function MobileComparePage({
           </div>
         )}
 
-        {/* ④ 축 선택 */}
+        {/* ③ 축 선택(세부조정) */}
         <div style={{ padding: "14px 16px 0", display: "flex", flexDirection: "column", gap: 14 }}>
           {category.axes.map((axis, axisIdx) => {
             const axisColor = AXIS_COLORS[axisIdx] ?? "#64748B"
@@ -656,6 +614,50 @@ export function MobileComparePage({
             )
           })}
         </div>
+
+        <hr style={{ margin: "16px 16px 0", border: "none", borderTop: "2px dashed #111", opacity: 0.3 }} />
+
+        {/* ④ 고정 규칙 — 세부조정과 AI 접속 링크 사이에 배치 */}
+        {fixedRules.length > 0 && (
+          <div style={{ padding: "14px 16px 0" }}>
+            <div
+              style={{
+                background: "#FFF5F5",
+                border: "1.5px solid #F87171",
+                borderRadius: 10,
+                padding: "10px 14px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+              }}
+            >
+              <div className="font-pixel" style={{ fontSize: 9, color: "#DC2626" }}>
+                ⚠ FIXED RULE
+              </div>
+              {fixedRules.map((rule, i) => (
+                <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start" }}>
+                  <span
+                    style={{
+                      background: "#DC2626",
+                      color: "#fff",
+                      fontSize: 10,
+                      fontWeight: 800,
+                      padding: "1px 6px",
+                      borderRadius: 4,
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {rule.label}
+                  </span>
+                  <p style={{ fontSize: 11, color: "#B91C1C", margin: 0, fontWeight: 600, lineHeight: 1.5 }}>
+                    {rule.message}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <hr style={{ margin: "16px 16px 0", border: "none", borderTop: "2px dashed #111", opacity: 0.3 }} />
 
