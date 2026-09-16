@@ -254,7 +254,7 @@ const NATURE_RIGHT_PHRASES = [
   "계속 달고 사는",
 ]
 
-// 문장 안에서 phrases 중 가장 나중(끝쪽)에 등장한 위치를 반환. 매치 없으면 -1.
+// 전체 텍스트 안에서 phrases 중 가장 나중(끝쪽)에 등장한 위치를 반환. 매치 없으면 -1.
 function lastPhraseIndex(text: string, phrases: string[]): number {
   let best = -1
   for (const phrase of phrases) {
