@@ -13,8 +13,9 @@ import { MobileLibraryPage } from "./pages/MobileLibraryPage"
 type Page = 0 | 1 | 2 | 3
 
 export default function App() {
-  // 모바일 폭에는 랜딩 페이지가 없다(기획 확정) — 첫 페이지를 바로 입력 화면(1)으로
-  // 연다. isMobile은 matchMedia 기반이라 마운트 시점에 동기적으로 값을 알 수 있어
+  // 모바일 기기에는 랜딩 페이지가 없다(기획 확정) — 첫 페이지를 바로 입력 화면(1)으로
+  // 연다. isMobile은 User-Agent 기반(창 너비 아님 — 데스크톱 창을 좁혀도 모바일로
+  // 안 바뀌어야 한다는 요구사항)이라 마운트 시점에 동기적으로 값을 알 수 있어
   // 랜딩 화면이 잠깐 보였다 사라지는 깜빡임이 없다.
   const isMobile = useIsMobile()
   const [page, setPage] = useState<Page>(() => (isMobile ? 1 : 0))
