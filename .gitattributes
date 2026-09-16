@@ -152,3 +152,4 @@
 # ---------------------------------------------------------------------------
 extension/**/*.png filter= diff= merge= -text
 src/assets/toggle/*.png filter= diff= merge= -text
+public/*.png filter= diff= merge= -text
