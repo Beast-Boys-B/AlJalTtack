@@ -565,7 +565,8 @@ export function ComparePage({
                 border: "1.5px solid #111",
                 borderRadius: 10,
                 padding: "8px 14px",
-                flexWrap: "nowrap",
+                flexWrap: "wrap",
+                rowGap: 6,
                 flexShrink: 0,
                 boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
               }}
@@ -580,7 +581,7 @@ export function ComparePage({
               >
                 결과가 마음에 드시나요?
               </span>
-              <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                 <button
                   className="btn-arcade"
                   disabled={feedbackGiven !== null}
