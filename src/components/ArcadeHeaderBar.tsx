@@ -21,6 +21,7 @@ export function ArcadeHeaderBar({
   onHome,
   onLibrary,
   libraryActive,
+  isMobile,
 }: {
   crtEnabled: boolean
   setCrtEnabled: (v: boolean) => void
@@ -29,6 +30,7 @@ export function ArcadeHeaderBar({
   onHome?: () => void
   onLibrary?: () => void
   libraryActive?: boolean
+  isMobile?: boolean
 }) {
   // Shrinks while the mouse/finger is physically held down, grows back on
   // release — to whichever resting scale matches the (possibly just-toggled)
@@ -93,58 +95,64 @@ export function ArcadeHeaderBar({
           >
             알잘딱
           </span>
-          <span
-            className="font-pixel"
-            style={{
-              fontSize: 9,
-              background: LIME,
-              color: INK,
-              padding: "2px 5px",
-              fontWeight: "bold",
-            }}
-          >
-            ARCADE v2.0
-          </span>
+          {!isMobile && (
+            <span
+              className="font-pixel"
+              style={{
+                fontSize: 9,
+                background: LIME,
+                color: INK,
+                padding: "2px 5px",
+                fontWeight: "bold",
+              }}
+            >
+              ARCADE v2.0
+            </span>
+          )}
         </button>
-        <div
-          style={{ display: "flex", alignItems: "center", gap: 12 }}
-          className="font-pixel"
-        >
-          <div style={{ fontSize: 10, color: "#888" }}>
-            SCORE:{" "}
-            <span style={{ color: LIME }}>
-              {score.toString().padStart(6, "0")}
-            </span>
+        {!isMobile && (
+          <div
+            style={{ display: "flex", alignItems: "center", gap: 12 }}
+            className="font-pixel"
+          >
+            <div style={{ fontSize: 10, color: "#888" }}>
+              SCORE:{" "}
+              <span style={{ color: LIME }}>
+                {score.toString().padStart(6, "0")}
+              </span>
+            </div>
+            <div style={{ fontSize: 10, color: "#888" }}>
+              CREDIT:{" "}
+              <span style={{ color: "#FFDD00" }}>
+                {credits.toString().padStart(2, "0")} 🪙
+              </span>
+            </div>
           </div>
-          <div style={{ fontSize: 10, color: "#888" }}>
-            CREDIT:{" "}
-            <span style={{ color: "#FFDD00" }}>
-              {credits.toString().padStart(2, "0")} 🪙
-            </span>
-          </div>
-        </div>
+        )}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <button
-          ref={crtBtnRef}
-          onClick={() => setCrtEnabled(!crtEnabled)}
-          style={{
-            background: crtEnabled ? LIME : "#222",
-            color: crtEnabled ? INK : "#888",
-            border: "1px solid #444",
-            padding: "4px 10px",
-            fontSize: 11,
-            fontWeight: 700,
-            cursor: "pointer",
-            borderRadius: 4,
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-          }}
-          className="font-pixel"
-        >
-          📺 CRT {crtEnabled ? "ON" : "OFF"}
-        </button>
+        {!isMobile && (
+          <button
+            ref={crtBtnRef}
+            onClick={() => setCrtEnabled(!crtEnabled)}
+            style={{
+              background: crtEnabled ? LIME : "#222",
+              color: crtEnabled ? INK : "#888",
+              border: "1px solid #444",
+              padding: "4px 10px",
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: "pointer",
+              borderRadius: 4,
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+            }}
+            className="font-pixel"
+          >
+            📺 CRT {crtEnabled ? "ON" : "OFF"}
+          </button>
+        )}
         <button
           onClick={onLibrary}
           onMouseDown={() => setLibraryHeld(true)}
