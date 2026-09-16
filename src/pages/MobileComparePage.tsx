@@ -1,5 +1,5 @@
 // Mobile Compare page — single vertical scroll (fixed-rule box → input →
-// sticky output+copy → axis buttons → external AI links → 👍/👎 feedback).
+// output+copy → axis buttons → external AI links → 👍/👎 feedback).
 // Layout ported from the Figma Make mobile mockup's MobileComparePage
 // (mobile/src/App.tsx, ~line 4076) — layout reference only. All category
 // data/logic (FIXED_RULES, generateRefinedPrompt, detectCategoryAxes) comes
