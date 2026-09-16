@@ -384,12 +384,13 @@ export function MobileComparePage({
           )}
         </div>
 
-        {/* ③ 완성된 프롬프트 — sticky with copy button */}
+        {/* ③ 완성된 프롬프트 — copy button */}
+        {/* [2026-09-16 수정] 원래 sticky(top:0)였으나, 텍스트 박스(최대 300px)+
+            재조정 카운트까지 이 블록 전체가 상단에 들러붙어 아래 축 버튼·AI
+            서비스 링크·피드백을 가리는 문제가 있어 일반 흐름(sticky 아님)으로
+            되돌림 — 세로 한 화면 스크롤 구조에선 이 블록만 고정할 이유가 없다. */}
         <div
           style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 10,
             background: IVORY,
             padding: "10px 16px 0",
           }}
