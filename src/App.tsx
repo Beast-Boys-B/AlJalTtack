@@ -75,6 +75,25 @@ export default function App() {
     setPage(2)
   }
 
+  const headerBar = (
+    <ArcadeHeaderBar
+      crtEnabled={crtEnabled}
+      setCrtEnabled={setCrtEnabled}
+      credits={credits}
+      score={score}
+      onHome={goHome}
+      onLibrary={goToLibrary}
+      libraryActive={page === 3}
+      isMobile={isMobile}
+    />
+  )
+  // 모바일 페이지2(비교 화면)만 예외: 검정 상단바를 스크롤 영역 "안"에 넣어 함께
+  // 스크롤되게 하고, 대신 MobileComparePage 자체 서브헤더(뒤로/카테고리/처음으로)가
+  // 그 스크롤 컨테이너 안에서 sticky로 화면 위에 고정된다 — 검정바는 스크롤에 밀려
+  // 사라지고 흰 서브헤더만 고정되길 원한다는 요청(다른 페이지/데스크톱은 기존 그대로
+  // 검정바가 스크롤 영역 바깥에서 항상 고정).
+  const headerScrollsWithContent = isMobile && page === 2
+
   return (
     <div
       className={crtEnabled ? "crt-overlay" : ""}
@@ -85,16 +104,7 @@ export default function App() {
         flexDirection: "column",
       }}
     >
-      <ArcadeHeaderBar
-        crtEnabled={crtEnabled}
-        setCrtEnabled={setCrtEnabled}
-        credits={credits}
-        score={score}
-        onHome={goHome}
-        onLibrary={goToLibrary}
-        libraryActive={page === 3}
-        isMobile={isMobile}
-      />
+      {!headerScrollsWithContent && headerBar}
       <div style={{ flex: 1, overflow: "hidden" }}>
         {page === 0 && (
           <LandingPage
@@ -149,15 +159,18 @@ export default function App() {
             style={{ height: "100%", overflowY: "auto" }}
           >
             {isMobile ? (
-              <MobileComparePage
-                inputText={inputText}
-                category={cat}
-                destination={destination}
-                onBack={goBack}
-                onReset={goReset}
-                soundEnabled={soundEnabled}
-                addScore={addScore}
-              />
+              <>
+                {headerBar}
+                <MobileComparePage
+                  inputText={inputText}
+                  category={cat}
+                  destination={destination}
+                  onBack={goBack}
+                  onReset={goReset}
+                  soundEnabled={soundEnabled}
+                  addScore={addScore}
+                />
+              </>
             ) : (
               <ComparePage
                 inputText={inputText}

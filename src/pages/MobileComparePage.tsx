@@ -169,23 +169,25 @@ export function MobileComparePage({
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
         background: IVORY,
       }}
       className="arcade-grid"
     >
-      {/* Sub header */}
+      {/* Sub header — sticky within the ancestor scroll container (App.tsx
+          renders this on top of the page's overflow:auto wrapper) so it stays
+          pinned to the top while the black ArcadeHeaderBar above it, and the
+          content below, scroll away underneath it. */}
       <div
         style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 30,
           padding: "10px 16px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           borderBottom: "2px solid #111",
           background: "#fff",
-          flexShrink: 0,
           gap: 8,
         }}
       >
@@ -237,8 +239,10 @@ export function MobileComparePage({
         </button>
       </div>
 
-      {/* Single scrollable column */}
-      <div style={{ flex: 1, overflowY: "auto" }} className="scrollbar-hide">
+      {/* Content — no longer its own scroll container; the ancestor
+          overflow:auto wrapper in App.tsx scrolls this together with the
+          ArcadeHeaderBar above, while the sticky sub-header stays pinned. */}
+      <div>
         {/* ① 자연어 입력칸 — 라벨줄+textarea를 position:relative 기준자로 묶어서
             힌트 팝업을 이 박스 아랫변(top:100%)에 순수 CSS로 맞물리게 한다(데스크톱
             ComparePage.tsx와 동일 기법 — JS 위치 재계산 방식은 쓰지 않는다). */}
