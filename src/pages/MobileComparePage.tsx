@@ -69,6 +69,32 @@ export function MobileComparePage({
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // 원래 복사 버튼(AI OUTPUT 줄)이 스크롤로 화면 밖(고정 서브헤더 아래)으로
+  // 벗어나면, 처음으로 버튼이 있던 자리에 복사 버튼을 대신 띄운다 — 모바일은
+  // 화면이 2개뿐이라 처음으로 버튼을 없애고 그 자리를 이 용도로 재사용.
+  // 실제 스크롤은 App.tsx 쪽 조상 div(overflowY:auto)에서 일어나는데, 그 div에
+  // ref가 없어 IntersectionObserver의 기본 root(뷰포트)로는 일부 브라우저에서
+  // 교차 판정이 어긋날 수 있다 — getBoundingClientRect 기반 스크롤 리스너로
+  // 직접 좌표를 재는 방식이 더 확실하다. window에 capture:true로 걸면 중첩된
+  // overflow:auto 컨테이너의 scroll 이벤트도(버블링 안 해도) 잡힌다.
+  const copyBtnRef = useRef<HTMLButtonElement>(null)
+  const [showStickyCopy, setShowStickyCopy] = useState(false)
+  const STICKY_HEADER_H = 56
+  useEffect(() => {
+    const check = () => {
+      const el = copyBtnRef.current
+      if (!el) return
+      setShowStickyCopy(el.getBoundingClientRect().bottom < STICKY_HEADER_H)
+    }
+    check()
+    window.addEventListener("scroll", check, true)
+    window.addEventListener("resize", check)
+    return () => {
+      window.removeEventListener("scroll", check, true)
+      window.removeEventListener("resize", check)
+    }
+  }, [])
+
   const refine = useCallback(
     (text: string, ax: Record<string, string>) => {
       setIsRefining(true)
@@ -116,6 +142,13 @@ export function MobileComparePage({
     if (soundEnabled) playArcadeSound("copy")
     // TC-공9/P-공13: 복사 실패 시 "복사됨" 표시하면 안 되고, 실패 안내 + 수동 복사
     // 영역을 보여줘야 한다 — 성공/실패를 실제로 구분해서 처리.
+    // navigator.clipboard는 보안 컨텍스트(https 또는 localhost)가 아니면
+    // undefined라서 바로 접근하면 버튼이 "눌러도 반응 없음" 상태로 죽는다 —
+    // 이 경우도 동일한 실패 처리(수동 복사 박스)로 떨어지게 한다.
+    if (!navigator.clipboard) {
+      setCopyFailed(true)
+      return
+    }
     navigator.clipboard
       .writeText(refinedPrompt)
       .then(() => {
@@ -221,22 +254,63 @@ export function MobileComparePage({
         >
           {category.icon} {category.name}
         </span>
-        <button
-          onClick={onReset}
-          className="btn-arcade"
-          style={{
-            background: "#fff",
-            border: "2px solid #111",
-            padding: "6px 14px",
-            borderRadius: 8,
-            cursor: "pointer",
-            fontFamily: "'Noto Sans KR', sans-serif",
-            fontWeight: 700,
-            fontSize: 13,
-          }}
-        >
-          처음으로
-        </button>
+        {/* 처음으로 버튼 자리 — 모바일은 화면이 2개뿐이라 없앴고, 대신 원래 복사
+            버튼이 스크롤로 안 보일 때만 여기에 복사 버튼이 뜬다. 폭을 고정해서
+            버튼이 나타나도 가운데 카테고리 배지 위치가 흔들리지 않게 한다. */}
+        <div style={{ width: 34, display: "flex", justifyContent: "flex-end" }}>
+          {showStickyCopy && (
+            <button
+              onClick={handleCopy}
+              className="btn-arcade"
+              style={{
+                background: copySuccess ? LIME : "#fff",
+                color: INK,
+                fontWeight: 800,
+                padding: "6px 10px",
+                borderRadius: 8,
+                border: "2px solid #111",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                lineHeight: 1,
+                transition: "background 0.2s ease",
+              }}
+              title="프롬프트 복사"
+            >
+              {copySuccess ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                </svg>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Content — no longer its own scroll container; the ancestor
@@ -380,6 +454,7 @@ export function MobileComparePage({
 
             <div style={{ position: "relative" }}>
               <button
+                ref={copyBtnRef}
                 onClick={handleCopy}
                 className="btn-arcade"
                 style={{
