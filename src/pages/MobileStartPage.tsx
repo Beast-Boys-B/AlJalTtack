@@ -388,39 +388,6 @@ export function MobileStartPage({
           </div>
         )}
 
-        {/* PROMPT SAMPLE button — opens the library, same handler as the
-            ArcadeHeaderBar's 📚 SAMPLE button (both call goToLibrary). */}
-        <button
-          onClick={() => {
-            if (soundEnabled) playArcadeSound("select")
-            onLibrary()
-          }}
-          className="btn-arcade"
-          style={{
-            width: "100%",
-            marginTop: 10,
-            padding: "12px 18px",
-            borderRadius: 10,
-            fontSize: 13,
-            fontWeight: 800,
-            border: "2px solid #111",
-            background: INK,
-            color: LIME,
-            cursor: "pointer",
-            fontFamily: "'Noto Sans KR', sans-serif",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            letterSpacing: 0.5,
-          }}
-        >
-          <span>📚</span>
-          <span className="font-pixel" style={{ fontSize: 11 }}>
-            PROMPT SAMPLE
-          </span>
-        </button>
-
         {/* 진행 불가 사유 안내(TC-공1) */}
         {!canProceed && trimmedLength > 0 && !overLimit && !hasProfanity && (
           <p
