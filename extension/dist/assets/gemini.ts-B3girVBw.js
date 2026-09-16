@@ -1,0 +1,1 @@
+import{n as e,t}from"./insertText-UBc8MZCn.js";e(t([`div.ql-editor[contenteditable="true"]`,`rich-textarea div[contenteditable="true"]`,`div[contenteditable="true"]`]));

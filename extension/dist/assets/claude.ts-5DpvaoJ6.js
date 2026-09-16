@@ -1,0 +1,1 @@
+import{n as e,t}from"./insertText-UBc8MZCn.js";e(t([`div[contenteditable="true"][data-testid="chat-input"]`,`div.ProseMirror[contenteditable="true"]`,`div[contenteditable="true"]`]));
