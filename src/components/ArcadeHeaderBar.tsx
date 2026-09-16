@@ -1,5 +1,17 @@
-import { useState } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 import { LIME, INK } from "../theme"
+import libraryPull from "../assets/library-button/pull.svg"
+import libraryPush from "../assets/library-button/push.svg"
+
+// The SVGs' viewBox (87 x 30) is padded — the pill graphic inside is placed
+// via translate(2.32 3.87) scale(.16) of a 512x132 source, so it only fills
+// 132*.16 / 30 ≈ 70.4% of the full box height. To match the *visible pill's*
+// height (not the padded box) to the CRT button, we size the box larger by
+// the inverse of that fraction.
+const LIBRARY_BTN_ASPECT = 87 / 30
+const LIBRARY_BTN_VISIBLE_FRACTION = (132 * 0.16) / 30
+// Slight bump on top of the CRT-matched size, per request.
+const LIBRARY_BTN_EXTRA_SCALE = 1.15 * 0.9
 
 export function ArcadeHeaderBar({
   crtEnabled,
@@ -24,6 +36,20 @@ export function ArcadeHeaderBar({
   const [libraryHeld, setLibraryHeld] = useState(false)
   const libraryRestScale = libraryActive ? 0.94 : 1
   const libraryScale = libraryHeld ? libraryRestScale - 0.08 : libraryRestScale
+
+  // Measure the CRT button's actual rendered height so the *visible pill*
+  // inside the library SVGs matches it exactly, instead of guessing a px
+  // value by hand — the box itself is sized bigger to compensate for the
+  // SVGs' internal padding (see LIBRARY_BTN_VISIBLE_FRACTION above).
+  const crtBtnRef = useRef<HTMLButtonElement>(null)
+  const [libraryVisibleH, setLibraryVisibleH] = useState(28)
+  useLayoutEffect(() => {
+    if (crtBtnRef.current) setLibraryVisibleH(crtBtnRef.current.offsetHeight)
+  }, [])
+  const libraryBtnH = Math.round(
+    (libraryVisibleH * LIBRARY_BTN_EXTRA_SCALE) / LIBRARY_BTN_VISIBLE_FRACTION,
+  )
+  const libraryBtnW = Math.round(libraryBtnH * LIBRARY_BTN_ASPECT)
   return (
     <div
       style={{
@@ -100,6 +126,7 @@ export function ArcadeHeaderBar({
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <button
+          ref={crtBtnRef}
           onClick={() => setCrtEnabled(!crtEnabled)}
           style={{
             background: crtEnabled ? LIME : "#222",
@@ -125,33 +152,45 @@ export function ArcadeHeaderBar({
           onMouseLeave={() => setLibraryHeld(false)}
           onTouchStart={() => setLibraryHeld(true)}
           onTouchEnd={() => setLibraryHeld(false)}
+          aria-pressed={libraryActive}
+          aria-label="라이브러리"
           style={{
-            // Hard 50/50 split (not a smooth blend) — the darker half reads
-            // as a cast shadow, giving a convex/"popped out" look: shadow on
-            // top when red (active), shadow on the bottom when green (off).
-            background: libraryActive
-              ? "linear-gradient(180deg, #A22857 0%, #A22857 50%, #E5307A 50%, #E5307A 100%)"
-              : "linear-gradient(180deg, #D7FC53 0%, #D7FC53 50%, #98AC3D 50%, #98AC3D 100%)",
-            color: libraryActive ? "#fff" : INK,
-            border: "2px solid #044444",
-            padding: "4px 10px",
-            fontSize: 11,
-            fontWeight: 700,
+            position: "relative",
+            top: 1,
+            width: libraryBtnW,
+            height: libraryBtnH,
+            padding: 0,
+            border: "none",
+            background: "none",
             cursor: "pointer",
-            borderRadius: 4,
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            boxShadow: libraryActive
-              ? "inset 0 2px 3px rgba(0,0,0,0.45)"
-              : "0 3px 0 rgba(0,0,0,0.35)",
             transform: `scale(${libraryScale})`,
-            transition:
-              "background 0.1s ease-out, box-shadow 0.1s ease-out, transform 0.15s ease-out",
+            transition: "transform 0.15s ease-out",
           }}
-          className="font-pixel"
         >
-          📚 SAMPLE
+          <img
+            src={libraryPull}
+            alt=""
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              opacity: libraryActive ? 0 : 1,
+              transition: "opacity 0.25s ease",
+            }}
+          />
+          <img
+            src={libraryPush}
+            alt=""
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              opacity: libraryActive ? 1 : 0,
+              transition: "opacity 0.25s ease",
+            }}
+          />
         </button>
       </div>
     </div>
