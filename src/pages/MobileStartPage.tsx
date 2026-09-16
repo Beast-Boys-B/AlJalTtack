@@ -185,67 +185,34 @@ export function MobileStartPage({
         style={{ flex: 1, overflowY: "auto", padding: "14px 16px 8px" }}
         className="scrollbar-hide"
       >
-        <div style={{ position: "relative" }}>
-          <textarea
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            placeholder={
-              cat?.placeholder ||
-              '떠오르는 대로 편하게 입력해보세요.\n\n예: "다음 달에 도쿄 여행 가려고 해요."'
-            }
-            style={{
-              width: "100%",
-              height: isFocused || showDropdown ? 180 : 380,
-              padding: "16px 56px 56px 16px",
-              fontSize: 16,
-              lineHeight: 1.75,
-              border: "3px solid #111",
-              borderRadius: 16,
-              resize: "none",
-              outline: "none",
-              fontFamily: "'Noto Sans KR', sans-serif",
-              background: "#fff",
-              color: INK,
-              caretColor: LIME,
-              boxSizing: "border-box",
-              boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
-              transition: "height 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-            }}
-          />
-          {/* 프롬프트 완성하기 — 입력창 우측 하단의 동그란 화살표 버튼 (데스크톱과 동일한 패턴) */}
-          <button
-            onClick={() => {
-              if (!canProceed) return
-              if (soundEnabled) playArcadeSound("powerup")
-              onNext()
-            }}
-            className="btn-arcade"
-            title={ctaLabel}
-            aria-label={ctaLabel}
-            style={{
-              position: "absolute",
-              right: 10,
-              bottom: 14,
-              width: 34,
-              height: 34,
-              borderRadius: "50%",
-              border: "2.5px solid #111",
-              background: canProceed ? LIME : "#E8E8E4",
-              color: canProceed ? INK : "#999",
-              fontSize: 15,
-              fontWeight: 900,
-              cursor: canProceed ? "pointer" : "not-allowed",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
-            }}
-          >
-            →
-          </button>
-        </div>
+        <textarea
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder={
+            cat?.placeholder ||
+            '떠오르는 대로 편하게 입력해보세요.\n\n예: "다음 달에 도쿄 여행 가려고 해요."'
+          }
+          style={{
+            width: "100%",
+            height: isFocused || showDropdown ? 180 : 380,
+            padding: "16px",
+            fontSize: 16,
+            lineHeight: 1.75,
+            border: "3px solid #111",
+            borderRadius: 16,
+            resize: "none",
+            outline: "none",
+            fontFamily: "'Noto Sans KR', sans-serif",
+            background: "#fff",
+            color: INK,
+            caretColor: LIME,
+            boxSizing: "border-box",
+            boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
+            transition: "height 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
+        />
 
         {/* 500자 상한(P-공8/P-공17) */}
         <div
@@ -421,7 +388,7 @@ export function MobileStartPage({
           </div>
         )}
 
-        {/* 진행 불가 사유 안내(TC-공1) — 버튼이 입력창 안으로 옮겨오며 함께 이동 */}
+        {/* 진행 불가 사유 안내(TC-공1) */}
         {!canProceed && trimmedLength > 0 && !overLimit && !hasProfanity && (
           <p
             className="animate-fade-in font-pixel"
@@ -435,6 +402,32 @@ export function MobileStartPage({
             {ctaLabel}
           </p>
         )}
+
+        <button
+          onClick={() => {
+            if (!canProceed) return
+            if (soundEnabled) playArcadeSound("powerup")
+            onNext()
+          }}
+          className="btn-arcade pulse-lime"
+          style={{
+            width: "100%",
+            marginTop: 12,
+            background: canProceed ? LIME : "#E8E8E4",
+            color: canProceed ? INK : "#888",
+            fontWeight: 900,
+            fontSize: 17,
+            padding: "16px",
+            borderRadius: 999,
+            border: "3px solid #111",
+            cursor: canProceed ? "pointer" : "not-allowed",
+            fontFamily: "'Noto Sans KR', sans-serif",
+            opacity: canProceed ? 1 : 0.6,
+            boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
+          }}
+        >
+          {canProceed ? "🎮 프롬프트 완성하기 →" : ctaLabel}
+        </button>
 
         <div style={{ height: 24 }} />
       </div>
