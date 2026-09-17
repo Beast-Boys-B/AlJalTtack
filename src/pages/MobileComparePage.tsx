@@ -138,28 +138,49 @@ export function MobileComparePage({
     refine(leftText, newAxes)
   }
 
+  const markCopied = () => {
+    addScore(300)
+    setCopyFailed(false)
+    setHasCopied(true)
+    setCopySuccess(true)
+    setTimeout(() => setCopySuccess(false), 2200)
+  }
+
+  // navigator.clipboard는 보안 컨텍스트(https 또는 localhost)가 아니면 없거나
+  // writeText가 실패한다 — LAN IP(http://192.168.x.x)로 폰에서 접속할 때 흔히
+  // 걸리는 경우라, 이때는 execCommand("copy") 레거시 방식으로 한 번 더 시도한다.
+  const legacyCopy = (text: string) => {
+    const ta = document.createElement("textarea")
+    ta.value = text
+    ta.style.position = "fixed"
+    ta.style.left = "-9999px"
+    document.body.appendChild(ta)
+    ta.select()
+    let ok = false
+    try {
+      ok = document.execCommand("copy")
+    } catch {
+      ok = false
+    }
+    document.body.removeChild(ta)
+    return ok
+  }
+
   const handleCopy = () => {
     if (soundEnabled) playArcadeSound("copy")
     // TC-공9/P-공13: 복사 실패 시 "복사됨" 표시하면 안 되고, 실패 안내 + 수동 복사
     // 영역을 보여줘야 한다 — 성공/실패를 실제로 구분해서 처리.
-    // navigator.clipboard는 보안 컨텍스트(https 또는 localhost)가 아니면
-    // undefined라서 바로 접근하면 버튼이 "눌러도 반응 없음" 상태로 죽는다 —
-    // 이 경우도 동일한 실패 처리(수동 복사 박스)로 떨어지게 한다.
     if (!navigator.clipboard) {
-      setCopyFailed(true)
+      if (legacyCopy(refinedPrompt)) markCopied()
+      else setCopyFailed(true)
       return
     }
     navigator.clipboard
       .writeText(refinedPrompt)
-      .then(() => {
-        addScore(300)
-        setCopyFailed(false)
-        setHasCopied(true)
-        setCopySuccess(true)
-        setTimeout(() => setCopySuccess(false), 2200)
-      })
+      .then(markCopied)
       .catch(() => {
-        setCopyFailed(true)
+        if (legacyCopy(refinedPrompt)) markCopied()
+        else setCopyFailed(true)
       })
   }
 
