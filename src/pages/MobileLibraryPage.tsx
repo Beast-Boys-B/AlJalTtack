@@ -297,40 +297,36 @@ export function MobileLibraryPage({
 
             {/* 바텀시트 — 헤더의 중앙 바를 위/아래로 끌면 "프롬프트 라이브러리"
                 헤더 아래 선까지만 덮는 전체 높이와 원래(peek) 높이, 이 둘 사이만
-                스냅한다(중간 정지 없음).
-                [성능] height를 직접 애니메이션하면 매 프레임 레이아웃을 다시
-                계산해야 해서(리플로우) 모바일에서 끊겨 보인다 — 그래서 카드
-                자체의 top·height는 "완전히 펼쳐졌을 때" 값으로 고정해두고(펼친
-                상태 = transform 없음, 기존과 동일한 모양), 접힌 상태만
-                transform: translateY로 카드 전체를 아래로 밀어서 표현한다.
-                접혔을 때 카드 아랫부분이 화면 밖으로 밀려나 안 보이는 것뿐이라
-                (구글맵 바텀시트와 같은 원리) 상단 모서리는 항상 실제 카드
-                모서리 그대로 보인다 — 래퍼를 따로 두지 않아도 된다. */}
-            {selectedItem && (() => {
-              const expandedTop = headerBottom - 6
-              const cardHeight = Math.max(0, viewportHeight - expandedTop - 16)
-              const collapsedOffset = Math.max(0, collapsedTop - expandedTop)
-              return (
-                <div
-                  className="animate-fade-up"
-                  style={{
-                    position: "fixed",
-                    left: 12,
-                    right: 12,
-                    top: expandedTop,
-                    height: cardHeight,
-                    transform: `translateY(${expanded ? 0 : collapsedOffset}px)`,
-                    transition: "transform 0.3s ease",
-                    background: "#fff",
-                    border: `2.5px solid ${catColor}`,
-                    borderRadius: 14,
-                    overflow: "hidden",
-                    boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
-                    display: "flex",
-                    flexDirection: "column",
-                    zIndex: 50,
-                  }}
-                >
+                스냅한다(중간 정지 없음). bottom을 고정하고 height만 애니메이션해서
+                항상 카드(둥근 모서리·테두리) 모양을 유지한 채 스르륵 늘어난다.
+                [성능] transform 기반으로 두 번 바꿔봤으나 좌표 계산이 실기기에서
+                검증 안 된 채 두 번 다 위치가 어긋나는 버그가 나서, 위치가 확실히
+                맞는 이 height 애니메이션 버전으로 되돌렸다 — contain으로 리플로우
+                범위를 이 요소 내부로 한정해 성능만 개선(위치 계산은 그대로 유지). */}
+            {selectedItem && (
+              <div
+                className="animate-fade-up"
+                style={{
+                  position: "fixed",
+                  left: 12,
+                  right: 12,
+                  bottom: 16,
+                  height: Math.max(
+                    0,
+                    viewportHeight - (expanded ? headerBottom - 6 : collapsedTop) - 16,
+                  ),
+                  transition: "height 0.3s ease",
+                  contain: "layout paint",
+                  background: "#fff",
+                  border: `2.5px solid ${catColor}`,
+                  borderRadius: 14,
+                  overflow: "hidden",
+                  boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
+                  display: "flex",
+                  flexDirection: "column",
+                  zIndex: 50,
+                }}
+              >
                 <div
                   onTouchStart={handleTouchStart}
                   onTouchEnd={handleTouchEnd}
@@ -544,9 +540,8 @@ export function MobileLibraryPage({
                     🎮 이 예시로 시작하기 →
                   </button>
                 </div>
-                </div>
-              )
-            })()}
+              </div>
+            )}
           </>
         ) : (
           <div style={{ textAlign: "center", padding: "60px 20px" }}>
