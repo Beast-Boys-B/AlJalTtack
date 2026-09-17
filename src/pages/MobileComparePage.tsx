@@ -107,13 +107,16 @@ export function MobileComparePage({
   // 직접 좌표를 재는 방식이 더 확실하다. window에 capture:true로 걸면 중첩된
   // overflow:auto 컨테이너의 scroll 이벤트도(버블링 안 해도) 잡힌다.
   const copyBtnRef = useRef<HTMLButtonElement>(null)
+  const shareBtnRef = useRef<HTMLButtonElement>(null)
   const [showStickyCopy, setShowStickyCopy] = useState(false)
+  const [showStickyShare, setShowStickyShare] = useState(false)
   const STICKY_HEADER_H = 56
   useEffect(() => {
     const check = () => {
-      const el = copyBtnRef.current
-      if (!el) return
-      setShowStickyCopy(el.getBoundingClientRect().bottom < STICKY_HEADER_H)
+      const copyEl = copyBtnRef.current
+      if (copyEl) setShowStickyCopy(copyEl.getBoundingClientRect().bottom < STICKY_HEADER_H)
+      const shareEl = shareBtnRef.current
+      if (shareEl) setShowStickyShare(shareEl.getBoundingClientRect().bottom < STICKY_HEADER_H)
     }
     check()
     window.addEventListener("scroll", check, true)
@@ -277,9 +280,14 @@ export function MobileComparePage({
           top: 0,
           zIndex: 30,
           padding: "10px 16px",
-          display: "flex",
+          display: "grid",
+          // 1fr/auto/1fr — the two side columns always stay equal width, so
+          // the middle (badge) column sits at the true visual center no
+          // matter how wide "뒤로" or the action slot end up being (unlike
+          // `justifyContent: space-between`, which only centers the middle
+          // item when the two side items happen to be the same width).
+          gridTemplateColumns: "1fr auto 1fr",
           alignItems: "center",
-          justifyContent: "space-between",
           borderBottom: "2px solid #111",
           background: "#fff",
           gap: 8,
@@ -289,6 +297,7 @@ export function MobileComparePage({
           onClick={onBack}
           className="btn-arcade"
           style={{
+            justifySelf: "start",
             background: "#fff",
             border: "2px solid #111",
             padding: "6px 14px",
@@ -305,16 +314,59 @@ export function MobileComparePage({
           src={CATEGORY_BADGES[category.id]}
           alt={category.name}
           style={{
+            justifySelf: "center",
             height: CATEGORY_BADGE_H,
             width: "auto",
-            position: "relative",
-            left: -9,
           }}
         />
-        {/* 처음으로 버튼 자리 — 모바일은 화면이 2개뿐이라 없앴고, 대신 원래 복사
-            버튼이 스크롤로 안 보일 때만 여기에 복사 버튼이 뜬다. 폭을 고정해서
-            버튼이 나타나도 가운데 카테고리 배지 위치가 흔들리지 않게 한다. */}
-        <div style={{ width: 34, display: "flex", justifyContent: "flex-end" }}>
+        {/* 처음으로 버튼 자리 — 모바일은 화면이 2개뿐이라 없앴고, 대신 원래 복사·
+            공유 버튼이 스크롤로 안 보일 때 여기에 대신 뜬다. */}
+        <div
+          style={{
+            justifySelf: "end",
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 6,
+          }}
+        >
+          {canShare && showStickyShare && (
+            <button
+              onClick={handleShare}
+              className="btn-arcade"
+              style={{
+                background: "#fff",
+                color: INK,
+                fontWeight: 800,
+                padding: "6px 10px",
+                borderRadius: 8,
+                border: "2px solid #111",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                lineHeight: 1,
+              }}
+              title="다른 앱으로 공유"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </svg>
+            </button>
+          )}
           {showStickyCopy && (
             <button
               onClick={handleCopy}
@@ -515,6 +567,7 @@ export function MobileComparePage({
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               {canShare && (
                 <button
+                  ref={shareBtnRef}
                   onClick={handleShare}
                   className="btn-arcade"
                   style={{

@@ -38,19 +38,36 @@ export function MobileLibraryPage({
   const gridRef = useRef<HTMLDivElement>(null)
   const [headerBottom, setHeaderBottom] = useState(0)
   const [collapsedTop, setCollapsedTop] = useState(0)
+  // iOS 사파리는 CSS 100vh를 주소창이 숨겨졌을 때 기준(실제 보이는 화면보다 큼)으로
+  // 계산해서, 100vh 기반 높이 계산을 쓰면 펼친 시트가 화면 위로 넘어간다(안드로이드
+  // 크롬은 이 오차가 거의 없어 갤럭시에선 안 드러났던 것). headerBottom과 같은
+  // 방식으로 innerHeight도 직접 측정해 vh를 아예 안 쓴다.
+  const [viewportHeight, setViewportHeight] = useState(0)
   useEffect(() => {
-    const measure = () => setHeaderBottom(headerRef.current?.getBoundingClientRect().bottom ?? 0)
+    const measure = () => {
+      setHeaderBottom(headerRef.current?.getBoundingClientRect().bottom ?? 0)
+      setViewportHeight(window.innerHeight)
+    }
     measure()
     window.addEventListener("resize", measure)
     return () => window.removeEventListener("resize", measure)
   }, [])
 
   const DETAIL_GAP = 12
+  // 접힌 상태에서도 최소한 핸들+제목 줄 정도는 보이도록 보장하는 최소 높이 —
+  // 카드가 많아 그리드가 길거나(예: 여행계획만 7개라 한 줄 더 김), 스크롤된
+  // 상태에서 카드를 누르면 grid 바닥이 화면 하단에 가까워져 collapsedTop 기준
+  // 높이가 0에 가깝게 계산되는 버그가 있었다.
+  const MIN_PEEK_HEIGHT = 140
 
   const openDetail = (idx: number | null) => {
     setSelectedIdx(idx)
     setExpanded(false)
-    if (idx !== null) setCollapsedTop((gridRef.current?.getBoundingClientRect().bottom ?? 0) + DETAIL_GAP)
+    if (idx !== null) {
+      const rawTop = (gridRef.current?.getBoundingClientRect().bottom ?? 0) + DETAIL_GAP
+      const maxTop = Math.max(0, window.innerHeight - MIN_PEEK_HEIGHT - 16)
+      setCollapsedTop(Math.min(rawTop, maxTop))
+    }
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -122,7 +139,7 @@ export function MobileLibraryPage({
             fontSize: 13,
           }}
         >
-          ← 메인
+          ← 뒤로
         </button>
         <span style={{ fontFamily: "'Black Han Sans', sans-serif", fontSize: 18, color: INK }}>
           프롬프트 라이브러리
@@ -290,7 +307,11 @@ export function MobileLibraryPage({
             {/* 바텀시트 — 헤더의 중앙 바를 위/아래로 끌면 "프롬프트 라이브러리"
                 헤더 아래 선까지만 덮는 전체 높이와 원래(peek) 높이, 이 둘 사이만
                 스냅한다(중간 정지 없음). bottom을 고정하고 height만 애니메이션해서
-                항상 카드(둥근 모서리·테두리) 모양을 유지한 채 스르륵 늘어난다. */}
+                항상 카드(둥근 모서리·테두리) 모양을 유지한 채 스르륵 늘어난다.
+                [성능] transform 기반으로 두 번 바꿔봤으나 좌표 계산이 실기기에서
+                검증 안 된 채 두 번 다 위치가 어긋나는 버그가 나서, 위치가 확실히
+                맞는 이 height 애니메이션 버전으로 되돌렸다 — contain으로 리플로우
+                범위를 이 요소 내부로 한정해 성능만 개선(위치 계산은 그대로 유지). */}
             {selectedItem && (
               <div
                 className="animate-fade-up"
@@ -299,8 +320,15 @@ export function MobileLibraryPage({
                   left: 12,
                   right: 12,
                   bottom: 16,
-                  height: `calc(100vh - ${(expanded ? headerBottom - 6 : collapsedTop)}px - 16px)`,
-                  transition: "height 0.3s ease",
+                  height: Math.max(
+                    0,
+                    viewportHeight - (expanded ? headerBottom - 6 : collapsedTop) - 16,
+                  ),
+                  // 펼칠 땐 0.3s(그대로 유지), 접을 땐 0.15s로 더 빠르게 —
+                  // 내려가는 속도가 느려서 프레임이 떨어지는 것처럼 보인다는
+                  // 피드백 반영.
+                  transition: `height ${expanded ? 0.3 : 0.15}s ease`,
+                  contain: "layout paint",
                   background: "#fff",
                   border: `2.5px solid ${catColor}`,
                   borderRadius: 14,
@@ -316,12 +344,15 @@ export function MobileLibraryPage({
                   onTouchEnd={handleTouchEnd}
                   style={{
                     background: catColor,
-                    padding: "8px 16px 6px",
+                    // 접기 제스처를 잡는 영역이 너무 얇다는 피드백 — 위아래
+                    // 패딩을 늘려 터치 타겟을 키움(보이는 핸들 바 크기는 그대로).
+                    padding: "18px 16px 16px",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
                     flexShrink: 0,
                     cursor: "grab",
+                    touchAction: "none",
                   }}
                 >
                   <div
