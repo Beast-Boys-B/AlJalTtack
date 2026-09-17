@@ -49,6 +49,10 @@ export function MobileLibraryPage({
       setViewportHeight(window.innerHeight)
     }
     measure()
+    // 한글 커스텀 폰트가 이 측정 이후에 로드되면 헤더 높이가 기기마다 다른
+    // 시점에 바뀌어서 그 선의 위치가 기종별로 어긋난다 — 폰트 로드 완료 후
+    // 한 번 더 재서 항상 실제 렌더링된 선 위치를 쓰게 한다.
+    document.fonts?.ready.then(measure)
     window.addEventListener("resize", measure)
     return () => window.removeEventListener("resize", measure)
   }, [])
@@ -320,9 +324,12 @@ export function MobileLibraryPage({
                   left: 12,
                   right: 12,
                   bottom: 16,
+                  // top이 항상 정확히 headerBottom(프롬프트 라이브러리 헤더 밑선)이 되도록
+                  // 계산 — 기기별로 다른 임의 보정값(예: -6px) 없이, 실측값만 사용해서
+                  // 그 선을 넘어가는 일이 없게 한다.
                   height: Math.max(
                     0,
-                    viewportHeight - (expanded ? headerBottom - 6 : collapsedTop) - 16,
+                    viewportHeight - (expanded ? headerBottom : collapsedTop) - 16,
                   ),
                   // 펼칠 땐 0.3s(그대로 유지), 접을 땐 0.15s로 더 빠르게 —
                   // 내려가는 속도가 느려서 프레임이 떨어지는 것처럼 보인다는
