@@ -117,9 +117,12 @@ export function MobileLibraryPage({
         ref={headerRef}
         style={{
           padding: "12px 16px",
-          display: "flex",
+          display: "grid",
+          // 1fr/auto/1fr — the side columns stay equal width, so the middle
+          // title always sits at the true center regardless of the left
+          // button's width (unlike `justifyContent: space-between`).
+          gridTemplateColumns: "1fr auto 1fr",
           alignItems: "center",
-          justifyContent: "space-between",
           borderBottom: "2px solid #111",
           background: "#fff",
           flexShrink: 0,
@@ -129,6 +132,7 @@ export function MobileLibraryPage({
           onClick={onHome}
           className="btn-arcade"
           style={{
+            justifySelf: "start",
             background: "#fff",
             border: "2px solid #111",
             padding: "6px 14px",
@@ -141,12 +145,19 @@ export function MobileLibraryPage({
         >
           ← 뒤로
         </button>
-        <span style={{ fontFamily: "'Black Han Sans', sans-serif", fontSize: 18, color: INK }}>
+        <span
+          style={{
+            justifySelf: "center",
+            position: "relative",
+            left: 10,
+            fontFamily: "'Black Han Sans', sans-serif",
+            fontSize: 18,
+            color: INK,
+          }}
+        >
           프롬프트 라이브러리
         </span>
-        <span className="font-pixel" style={{ fontSize: 11, color: "#888" }}>
-          📚
-        </span>
+        <div />
       </div>
 
       {/* Category tabs — 2-row layout: 2 buttons (row 1), 3 buttons (row 2) */}
