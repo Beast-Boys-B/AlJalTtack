@@ -435,6 +435,11 @@ export function StartPage({
                 placeholder="예: 도쿄, 방콕, 제주도 (선택사항)"
                 style={{
                   flex: 1,
+                  // flex 아이템 기본값(min-width:auto)이 콘텐츠 기준 최소 너비
+                  // 밑으로 못 줄어들게 막아서, 창을 좁히면 입력창이 컨테이너를
+                  // 뚫고 나올 수 있다 — 0으로 명시해 flex:1이 실제로 화면
+                  // 폭에 맞게 줄어들 수 있게 한다.
+                  minWidth: 0,
                   padding: "10px 16px",
                   fontSize: 15,
                   border: "2px solid #111",
