@@ -153,3 +153,9 @@
 extension/**/*.png filter= diff= merge= -text
 src/assets/toggle/*.png filter= diff= merge= -text
 public/*.png filter= diff= merge= -text
+
+# Android 네이티브 프로젝트 — 아이콘/스플래시 PNG와 Gradle wrapper jar는
+# 빌드가 직접 읽어야 하는 실제 바이트라 LFS 포인터 텍스트로 바뀌면 빌드가
+# 깨진다(특히 gradlew가 wrapper jar를 그대로 실행하기 때문).
+android/**/*.png filter= diff= merge= -text
+android/**/*.jar filter= diff= merge= -text
