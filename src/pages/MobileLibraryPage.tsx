@@ -38,8 +38,16 @@ export function MobileLibraryPage({
   const gridRef = useRef<HTMLDivElement>(null)
   const [headerBottom, setHeaderBottom] = useState(0)
   const [collapsedTop, setCollapsedTop] = useState(0)
+  // iOS 사파리는 CSS 100vh를 주소창이 숨겨졌을 때 기준(실제 보이는 화면보다 큼)으로
+  // 계산해서, 100vh 기반 높이 계산을 쓰면 펼친 시트가 화면 위로 넘어간다(안드로이드
+  // 크롬은 이 오차가 거의 없어 갤럭시에선 안 드러났던 것). headerBottom과 같은
+  // 방식으로 innerHeight도 직접 측정해 vh를 아예 안 쓴다.
+  const [viewportHeight, setViewportHeight] = useState(0)
   useEffect(() => {
-    const measure = () => setHeaderBottom(headerRef.current?.getBoundingClientRect().bottom ?? 0)
+    const measure = () => {
+      setHeaderBottom(headerRef.current?.getBoundingClientRect().bottom ?? 0)
+      setViewportHeight(window.innerHeight)
+    }
     measure()
     window.addEventListener("resize", measure)
     return () => window.removeEventListener("resize", measure)
@@ -122,7 +130,7 @@ export function MobileLibraryPage({
             fontSize: 13,
           }}
         >
-          ← 메인
+          ← 뒤로
         </button>
         <span style={{ fontFamily: "'Black Han Sans', sans-serif", fontSize: 18, color: INK }}>
           프롬프트 라이브러리
@@ -299,7 +307,10 @@ export function MobileLibraryPage({
                   left: 12,
                   right: 12,
                   bottom: 16,
-                  height: `calc(100vh - ${(expanded ? headerBottom - 6 : collapsedTop)}px - 16px)`,
+                  height: Math.max(
+                    0,
+                    viewportHeight - (expanded ? headerBottom - 6 : collapsedTop) - 16,
+                  ),
                   transition: "height 0.3s ease",
                   background: "#fff",
                   border: `2.5px solid ${catColor}`,
