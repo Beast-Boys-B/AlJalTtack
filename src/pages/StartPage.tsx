@@ -339,7 +339,7 @@ export function StartPage({
                 height: 34,
                 borderRadius: "50%",
                 border: "2.5px solid #111",
-                background: canProceed ? LIME : "#E8E8E4",
+                background: canProceed ? "#9ffb64" : "#E8E8E4",
                 color: canProceed ? INK : "#999",
                 fontSize: 15,
                 fontWeight: 900,
