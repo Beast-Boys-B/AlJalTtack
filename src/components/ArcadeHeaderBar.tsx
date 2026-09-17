@@ -2,6 +2,12 @@ import { useLayoutEffect, useRef, useState } from "react"
 import { LIME, INK } from "../theme"
 import libraryPull from "../assets/library-button/pull.svg"
 import libraryPush from "../assets/library-button/push.svg"
+import logoMark from "../assets/logo/mark.svg"
+
+// Icon+wordmark combo mark, square viewBox (1024 x 1024) — sized to roughly
+// match the header's other buttons (~36px tall).
+const LOGO_H = 36
+const LOGO_W = 36
 
 // The SVGs' viewBox (87 x 30) is padded — the pill graphic inside is placed
 // via translate(2.32 3.87) scale(.16) of a 512x132 source, so it only fills
@@ -86,15 +92,11 @@ export function ArcadeHeaderBar({
             padding: 0,
           }}
         >
-          <span
-            style={{
-              fontFamily: "'Black Han Sans', sans-serif",
-              fontSize: 22,
-              color: LIME,
-            }}
-          >
-            알잘딱
-          </span>
+          <img
+            src={logoMark}
+            alt="알잘딱"
+            style={{ height: LOGO_H, width: LOGO_W }}
+          />
           {!isMobile && (
             <span
               className="font-pixel"
