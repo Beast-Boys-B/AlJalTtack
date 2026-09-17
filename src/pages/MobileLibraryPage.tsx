@@ -297,31 +297,49 @@ export function MobileLibraryPage({
 
             {/* 바텀시트 — 헤더의 중앙 바를 위/아래로 끌면 "프롬프트 라이브러리"
                 헤더 아래 선까지만 덮는 전체 높이와 원래(peek) 높이, 이 둘 사이만
-                스냅한다(중간 정지 없음). bottom을 고정하고 height만 애니메이션해서
-                항상 카드(둥근 모서리·테두리) 모양을 유지한 채 스르륵 늘어난다. */}
-            {selectedItem && (
-              <div
-                className="animate-fade-up"
-                style={{
-                  position: "fixed",
-                  left: 12,
-                  right: 12,
-                  bottom: 16,
-                  height: Math.max(
-                    0,
-                    viewportHeight - (expanded ? headerBottom - 6 : collapsedTop) - 16,
-                  ),
-                  transition: "height 0.3s ease",
-                  background: "#fff",
-                  border: `2.5px solid ${catColor}`,
-                  borderRadius: 14,
-                  overflow: "hidden",
-                  boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
-                  display: "flex",
-                  flexDirection: "column",
-                  zIndex: 50,
-                }}
-              >
+                스냅한다(중간 정지 없음).
+                [성능] height를 직접 애니메이션하면 매 프레임 레이아웃을 다시
+                계산해야 해서(리플로우) 모바일에서 끊겨 보인다 — 그래서 바깥
+                래퍼는 "완전히 펼쳐졌을 때" 크기로 고정해두고(둥근 모서리·테두리·
+                그림자도 이 래퍼가 담당), 안쪽 카드는 항상 같은(최대) 높이인 채
+                transform: translateY만 애니메이션해서 GPU 합성만으로 부드럽게
+                움직인다 — 접힌 상태에서 아래로 밀려난 만큼은 래퍼의
+                overflow:hidden이 그대로 잘라내 보여준다(카드 모양은 래퍼가
+                유지하므로 접힌 상태에서도 모서리가 잘려 보이지 않는다). */}
+            {selectedItem && (() => {
+              const expandedTop = headerBottom - 6
+              const wrapperHeight = Math.max(0, viewportHeight - expandedTop - 16)
+              const collapsedOffset = Math.max(0, collapsedTop - expandedTop)
+              return (
+                <div
+                  className="animate-fade-up"
+                  style={{
+                    position: "fixed",
+                    left: 12,
+                    right: 12,
+                    bottom: 16,
+                    height: wrapperHeight,
+                    background: "#fff",
+                    border: `2.5px solid ${catColor}`,
+                    borderRadius: 14,
+                    overflow: "hidden",
+                    boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
+                    zIndex: 50,
+                  }}
+                >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: wrapperHeight,
+                    transform: `translateY(${expanded ? 0 : collapsedOffset}px)`,
+                    transition: "transform 0.3s ease",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
                 <div
                   onTouchStart={handleTouchStart}
                   onTouchEnd={handleTouchEnd}
@@ -535,8 +553,10 @@ export function MobileLibraryPage({
                     🎮 이 예시로 시작하기 →
                   </button>
                 </div>
-              </div>
-            )}
+                </div>
+                </div>
+              )
+            })()}
           </>
         ) : (
           <div style={{ textAlign: "center", padding: "60px 20px" }}>
