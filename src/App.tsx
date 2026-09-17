@@ -155,13 +155,29 @@ export default function App() {
         {page === 2 && cat && (
           <div
             key="compare"
-            className="animate-fade-up"
             style={{ height: "100%", overflowY: "auto" }}
           >
             {isMobile ? (
               <>
+                {/* headerBar sits outside the fade wrapper below — it must
+                    stay put (no dissolve-in) when returning from the library,
+                    even though it scrolls away with the content on this page. */}
                 {headerBar}
-                <MobileComparePage
+                <div className="animate-fade-up">
+                  <MobileComparePage
+                    inputText={inputText}
+                    category={cat}
+                    destination={destination}
+                    onBack={goBack}
+                    onReset={goReset}
+                    soundEnabled={soundEnabled}
+                    addScore={addScore}
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="animate-fade-up">
+                <ComparePage
                   inputText={inputText}
                   category={cat}
                   destination={destination}
@@ -170,17 +186,7 @@ export default function App() {
                   soundEnabled={soundEnabled}
                   addScore={addScore}
                 />
-              </>
-            ) : (
-              <ComparePage
-                inputText={inputText}
-                category={cat}
-                destination={destination}
-                onBack={goBack}
-                onReset={goReset}
-                soundEnabled={soundEnabled}
-                addScore={addScore}
-              />
+              </div>
             )}
           </div>
         )}
