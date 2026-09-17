@@ -315,7 +315,10 @@ export function MobileLibraryPage({
                     0,
                     viewportHeight - (expanded ? headerBottom - 6 : collapsedTop) - 16,
                   ),
-                  transition: "height 0.3s ease",
+                  // 펼칠 땐 0.3s(그대로 유지), 접을 땐 0.15s로 더 빠르게 —
+                  // 내려가는 속도가 느려서 프레임이 떨어지는 것처럼 보인다는
+                  // 피드백 반영.
+                  transition: `height ${expanded ? 0.3 : 0.15}s ease`,
                   contain: "layout paint",
                   background: "#fff",
                   border: `2.5px solid ${catColor}`,
