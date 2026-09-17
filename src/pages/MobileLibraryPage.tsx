@@ -299,16 +299,16 @@ export function MobileLibraryPage({
                 헤더 아래 선까지만 덮는 전체 높이와 원래(peek) 높이, 이 둘 사이만
                 스냅한다(중간 정지 없음).
                 [성능] height를 직접 애니메이션하면 매 프레임 레이아웃을 다시
-                계산해야 해서(리플로우) 모바일에서 끊겨 보인다 — 그래서 바깥
-                래퍼는 "완전히 펼쳐졌을 때" 크기로 고정해두고(둥근 모서리·테두리·
-                그림자도 이 래퍼가 담당), 안쪽 카드는 항상 같은(최대) 높이인 채
-                transform: translateY만 애니메이션해서 GPU 합성만으로 부드럽게
-                움직인다 — 접힌 상태에서 아래로 밀려난 만큼은 래퍼의
-                overflow:hidden이 그대로 잘라내 보여준다(카드 모양은 래퍼가
-                유지하므로 접힌 상태에서도 모서리가 잘려 보이지 않는다). */}
+                계산해야 해서(리플로우) 모바일에서 끊겨 보인다 — 그래서 카드
+                자체의 top·height는 "완전히 펼쳐졌을 때" 값으로 고정해두고(펼친
+                상태 = transform 없음, 기존과 동일한 모양), 접힌 상태만
+                transform: translateY로 카드 전체를 아래로 밀어서 표현한다.
+                접혔을 때 카드 아랫부분이 화면 밖으로 밀려나 안 보이는 것뿐이라
+                (구글맵 바텀시트와 같은 원리) 상단 모서리는 항상 실제 카드
+                모서리 그대로 보인다 — 래퍼를 따로 두지 않아도 된다. */}
             {selectedItem && (() => {
               const expandedTop = headerBottom - 6
-              const wrapperHeight = Math.max(0, viewportHeight - expandedTop - 16)
+              const cardHeight = Math.max(0, viewportHeight - expandedTop - 16)
               const collapsedOffset = Math.max(0, collapsedTop - expandedTop)
               return (
                 <div
@@ -317,27 +317,18 @@ export function MobileLibraryPage({
                     position: "fixed",
                     left: 12,
                     right: 12,
-                    bottom: 16,
-                    height: wrapperHeight,
+                    top: expandedTop,
+                    height: cardHeight,
+                    transform: `translateY(${expanded ? 0 : collapsedOffset}px)`,
+                    transition: "transform 0.3s ease",
                     background: "#fff",
                     border: `2.5px solid ${catColor}`,
                     borderRadius: 14,
                     overflow: "hidden",
                     boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
-                    zIndex: 50,
-                  }}
-                >
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: wrapperHeight,
-                    transform: `translateY(${expanded ? 0 : collapsedOffset}px)`,
-                    transition: "transform 0.3s ease",
                     display: "flex",
                     flexDirection: "column",
+                    zIndex: 50,
                   }}
                 >
                 <div
@@ -552,7 +543,6 @@ export function MobileLibraryPage({
                   >
                     🎮 이 예시로 시작하기 →
                   </button>
-                </div>
                 </div>
                 </div>
               )
