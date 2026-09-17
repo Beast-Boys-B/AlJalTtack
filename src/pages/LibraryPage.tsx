@@ -386,7 +386,7 @@ export function LibraryPage({
                           fontSize: 11,
                           fontWeight: 700,
                           color: INK,
-                          background: LIME,
+                          background: "#9ffb64",
                           padding: "2px 8px",
                           borderRadius: 4,
                           border: "1.5px solid #111",
@@ -547,7 +547,7 @@ export function LibraryPage({
                         onStartWithExample(activeTab, selectedItem.example)
                       }}
                       style={{
-                        background: LIME,
+                        background: "#9ffb64",
                         color: INK,
                         fontWeight: 900,
                         fontSize: 16,
@@ -558,7 +558,7 @@ export function LibraryPage({
                         fontFamily: "'Noto Sans KR', sans-serif",
                       }}
                     >
-                      🎮 이 예시로 시작하기 →
+                      이 예시로 시작하기
                     </button>
                   </div>
                 </div>

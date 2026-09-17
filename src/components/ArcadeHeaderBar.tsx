@@ -67,7 +67,7 @@ export function ArcadeHeaderBar({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        borderBottom: `2px solid ${LIME}`,
+        borderBottom: isMobile ? "2px solid #9ffb64" : `2px solid ${LIME}`,
         flexWrap: "wrap",
         gap: 10,
       }}
