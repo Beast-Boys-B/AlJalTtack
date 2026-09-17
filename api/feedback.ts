@@ -7,6 +7,7 @@
 //   동일 원칙) — 이 API 자체도 조회(GET)는 만들지 않는다. 관리자 열람 화면은 별도 작업.
 
 import { neon } from "@neondatabase/serverless"
+import { applyCors } from "./_lib/cors"
 
 // 이 2개 카테고리는 원문을 저장하지 않는다.
 const NO_RAW_TEXT_CATEGORIES = new Set(["medical", "counseling"])
@@ -14,6 +15,8 @@ const NO_RAW_TEXT_CATEGORIES = new Set(["medical", "counseling"])
 const ALLOWED_CATEGORIES = new Set(["medical", "counseling", "travel", "photo", "writing"])
 
 export default async function handler(req: any, res: any) {
+  if (applyCors(req, res)) return
+
   if (req.method !== "POST") {
     res.status(405).json({ error: "POST만 지원합니다." })
     return

@@ -7,6 +7,7 @@
 // (docs 06-test-matrix.md에 [제안]으로 기록, 팀 검토 후 문구 변경 가능).
 
 import { neon } from "@neondatabase/serverless"
+import { applyCors } from "./_lib/cors"
 
 const ALLOWED_CATEGORIES = new Set(["medical", "counseling", "travel", "photo", "writing"])
 
@@ -20,6 +21,8 @@ const ALLOWED_REASONS = new Set([
 ])
 
 export default async function handler(req: any, res: any) {
+  if (applyCors(req, res)) return
+
   if (req.method !== "POST") {
     res.status(405).json({ error: "POST만 지원합니다." })
     return
