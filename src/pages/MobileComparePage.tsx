@@ -11,12 +11,31 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import { LIME, INK, IVORY, AXIS_COLORS } from "../theme"
 import {
   FIXED_RULES,
-  CATEGORY_COLORS,
   generateRefinedPrompt,
   detectCategoryAxes,
   type Category,
+  type CategoryId,
 } from "../categories"
 import { playArcadeSound } from "../lib/sound"
+import counselingBadge from "../assets/category-badges/counseling.svg"
+import medicalBadge from "../assets/category-badges/medical.svg"
+import travelBadge from "../assets/category-badges/travel.svg"
+import photoBadge from "../assets/category-badges/photo.svg"
+import writingBadge from "../assets/category-badges/writing.svg"
+
+// Custom icon+title artwork per category, replacing the emoji+text badge.
+// Native viewBox 222 x 99 for all five.
+const CATEGORY_BADGES: Record<CategoryId, string> = {
+  counseling: counselingBadge,
+  medical: medicalBadge,
+  travel: travelBadge,
+  photo: photoBadge,
+  writing: writingBadge,
+}
+// Width is "auto" (not a fixed px computed from one shared aspect ratio) so
+// each category's own SVG intrinsic ratio is preserved even if it differs
+// from the others (e.g. medical's viewBox is wider than the rest).
+const CATEGORY_BADGE_H = 26
 
 // Capacitor로 감싸면 상대경로("/api/...")가 로컬 번들 기준으로 해석돼 실제
 // 서버로 안 나간다 — 이 페이지(모바일 전용)의 API 호출만 절대경로로 고정한다.
@@ -239,7 +258,6 @@ export function MobileComparePage({
     { name: "Grok", url: "https://grok.x.ai" },
   ]
 
-  const catColor = CATEGORY_COLORS[category.id]
   const fixedRules = FIXED_RULES[category.id]
 
   return (
@@ -283,20 +301,16 @@ export function MobileComparePage({
         >
           ← 뒤로
         </button>
-        <span
+        <img
+          src={CATEGORY_BADGES[category.id]}
+          alt={category.name}
           style={{
-            background: catColor,
-            color: "#fff",
-            padding: "3px 10px",
-            fontSize: 13,
-            fontWeight: 800,
-            fontFamily: "'Noto Sans KR', sans-serif",
-            borderRadius: 4,
-            border: "1.5px solid #111",
+            height: CATEGORY_BADGE_H,
+            width: "auto",
+            position: "relative",
+            left: -9,
           }}
-        >
-          {category.icon} {category.name}
-        </span>
+        />
         {/* 처음으로 버튼 자리 — 모바일은 화면이 2개뿐이라 없앴고, 대신 원래 복사
             버튼이 스크롤로 안 보일 때만 여기에 복사 버튼이 뜬다. 폭을 고정해서
             버튼이 나타나도 가운데 카테고리 배지 위치가 흔들리지 않게 한다. */}
