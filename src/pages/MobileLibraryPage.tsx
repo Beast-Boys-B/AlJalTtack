@@ -315,7 +315,10 @@ export function MobileLibraryPage({
                     0,
                     viewportHeight - (expanded ? headerBottom - 6 : collapsedTop) - 16,
                   ),
-                  transition: "height 0.3s ease",
+                  // 펼칠 땐 0.3s(그대로 유지), 접을 땐 0.15s로 더 빠르게 —
+                  // 내려가는 속도가 느려서 프레임이 떨어지는 것처럼 보인다는
+                  // 피드백 반영.
+                  transition: `height ${expanded ? 0.3 : 0.15}s ease`,
                   contain: "layout paint",
                   background: "#fff",
                   border: `2.5px solid ${catColor}`,
@@ -332,12 +335,15 @@ export function MobileLibraryPage({
                   onTouchEnd={handleTouchEnd}
                   style={{
                     background: catColor,
-                    padding: "8px 16px 6px",
+                    // 접기 제스처를 잡는 영역이 너무 얇다는 피드백 — 위아래
+                    // 패딩을 늘려 터치 타겟을 키움(보이는 핸들 바 크기는 그대로).
+                    padding: "18px 16px 16px",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
                     flexShrink: 0,
                     cursor: "grab",
+                    touchAction: "none",
                   }}
                 >
                   <div
