@@ -54,11 +54,20 @@ export function MobileLibraryPage({
   }, [])
 
   const DETAIL_GAP = 12
+  // 접힌 상태에서도 최소한 핸들+제목 줄 정도는 보이도록 보장하는 최소 높이 —
+  // 카드가 많아 그리드가 길거나(예: 여행계획만 7개라 한 줄 더 김), 스크롤된
+  // 상태에서 카드를 누르면 grid 바닥이 화면 하단에 가까워져 collapsedTop 기준
+  // 높이가 0에 가깝게 계산되는 버그가 있었다.
+  const MIN_PEEK_HEIGHT = 140
 
   const openDetail = (idx: number | null) => {
     setSelectedIdx(idx)
     setExpanded(false)
-    if (idx !== null) setCollapsedTop((gridRef.current?.getBoundingClientRect().bottom ?? 0) + DETAIL_GAP)
+    if (idx !== null) {
+      const rawTop = (gridRef.current?.getBoundingClientRect().bottom ?? 0) + DETAIL_GAP
+      const maxTop = Math.max(0, window.innerHeight - MIN_PEEK_HEIGHT - 16)
+      setCollapsedTop(Math.min(rawTop, maxTop))
+    }
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
