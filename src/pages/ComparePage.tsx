@@ -54,6 +54,9 @@ export function ComparePage({
   const [copyFailed, setCopyFailed] = useState(false)
   const [adjustCount, setAdjustCount] = useState(0)
   const [showHelpCard, setShowHelpCard] = useState(false)
+  // 힌트를 한 번이라도 닫으면 이후 재조정마다 자동으로 다시 뜨지 않는다 — 대신
+  // RE-ADJUSTMENT 줄에 다시 열어볼 수 있는 버튼을 둔다(MobileComparePage.tsx와 동일).
+  const [hintDismissed, setHintDismissed] = useState(false)
   const [feedbackGiven, setFeedbackGiven] = useState<"up" | "down" | null>(null)
   const [feedbackThanks, setFeedbackThanks] = useState(false)
 
@@ -137,7 +140,7 @@ export function ComparePage({
     if (hasCopied) {
       const next = adjustCount + 1
       setAdjustCount(next)
-      if (next >= 3) setShowHelpCard(true)
+      if (next >= 3 && !hintDismissed) setShowHelpCard(true)
     }
     refine(val, axes)
   }
@@ -150,7 +153,7 @@ export function ComparePage({
     if (hasCopied) {
       const next = adjustCount + 1
       setAdjustCount(next)
-      if (next >= 3) setShowHelpCard(true)
+      if (next >= 3 && !hintDismissed) setShowHelpCard(true)
     }
     const axisIndex = category.axes.findIndex((a) => a.id === axisId)
     const axisColor = AXIS_COLORS[axisIndex] ?? "#64748B"
@@ -401,7 +404,10 @@ export function ComparePage({
                   }}
                 >
                   <button
-                    onClick={() => setShowHelpCard(false)}
+                    onClick={() => {
+                      setShowHelpCard(false)
+                      setHintDismissed(true)
+                    }}
                     style={{
                       position: "absolute",
                       top: 10,
@@ -965,14 +971,35 @@ export function ComparePage({
           {hasCopied && adjustCount > 0 && (
             <div
               className="font-pixel"
-              style={{ fontSize: 10, color: "#888", textAlign: "right" }}
+              style={{
+                fontSize: 10,
+                color: "#888",
+                textAlign: "right",
+                display: "flex",
+                justifyContent: "flex-end",
+                alignItems: "center",
+                gap: 10,
+              }}
             >
-              RE-ADJUSTMENT: {adjustCount} TIMES
-              {adjustCount < 3 && (
-                <span style={{ color: INK, fontWeight: "bold" }}>
-                  {" "}
-                  (3회 시 힌트 오픈)
-                </span>
+              <span>RE-ADJUSTMENT: {adjustCount} TIMES</span>
+              {adjustCount >= 3 && (
+                <button
+                  onClick={() => setShowHelpCard(true)}
+                  className="btn-arcade font-pixel"
+                  style={{
+                    background: "#fff",
+                    color: INK,
+                    border: "1.5px solid #111",
+                    borderRadius: 6,
+                    padding: "3px 8px",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: 0.5,
+                    cursor: "pointer",
+                  }}
+                >
+                  HINT
+                </button>
               )}
             </div>
           )}

@@ -18,6 +18,12 @@ import {
 } from "../categories"
 import { playArcadeSound } from "../lib/sound"
 
+// Capacitor로 감싸면 상대경로("/api/...")가 로컬 번들 기준으로 해석돼 실제
+// 서버로 안 나간다 — 이 페이지(모바일 전용)의 API 호출만 절대경로로 고정한다.
+// 데스크톱 ComparePage.tsx는 항상 브라우저로 이 도메인에 접속해 여는 것이라
+// 상대경로로 둬도 문제없어 그대로 둔다.
+const API_BASE = "https://proto-design-psi.vercel.app"
+
 // api/survey.ts의 ALLOWED_REASONS와 반드시 동일하게 유지(ComparePage.tsx와 동일 목록).
 const SURVEY_REASONS = [
   "원하는 톤·분위기가 안 나와요",
@@ -60,6 +66,10 @@ export function MobileComparePage({
   const [copyFailed, setCopyFailed] = useState(false)
   const [adjustCount, setAdjustCount] = useState(0)
   const [showHelpCard, setShowHelpCard] = useState(false)
+  // 힌트를 한 번이라도 닫으면(사용자가 "이제 안 봐도 됨"이라고 판단한 것) 이후
+  // 재조정마다 자동으로 다시 뜨지 않는다 — 대신 아래 RE-ADJUSTMENT 줄에 다시
+  // 열어볼 수 있는 버튼을 둔다.
+  const [hintDismissed, setHintDismissed] = useState(false)
   const [feedbackGiven, setFeedbackGiven] = useState<"up" | "down" | null>(null)
   const [feedbackThanks, setFeedbackThanks] = useState(false)
 
@@ -120,7 +130,7 @@ export function MobileComparePage({
     if (hasCopied) {
       const next = adjustCount + 1
       setAdjustCount(next)
-      if (next >= 3) setShowHelpCard(true)
+      if (next >= 3 && !hintDismissed) setShowHelpCard(true)
     }
     refine(val, axes)
   }
@@ -133,7 +143,7 @@ export function MobileComparePage({
     if (hasCopied) {
       const next = adjustCount + 1
       setAdjustCount(next)
-      if (next >= 3) setShowHelpCard(true)
+      if (next >= 3 && !hintDismissed) setShowHelpCard(true)
     }
     refine(leftText, newAxes)
   }
@@ -184,10 +194,22 @@ export function MobileComparePage({
       })
   }
 
+  // [복사]와 별개로 두는 공유 버튼 — Web Share API. 사용자가 앱 하나를 골라 텍스트를
+  // 바로 넘길 수 있어(오버레이/자동삽입 없이 "텍스트만 건네준다"는 기존 스코프 그대로).
+  // 미지원 기기에서는 버튼 자체를 렌더링하지 않는다(아래 canShare).
+  const handleShare = () => {
+    if (soundEnabled) playArcadeSound("copy")
+    navigator.share?.({ text: refinedPrompt }).catch(() => {
+      // 사용자가 공유 시트를 취소한 경우(AbortError)도 여기로 들어오는데,
+      // 실패로 취급할 일이 아니라 조용히 무시한다.
+    })
+  }
+  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function"
+
   const sendSurvey = (reason: string) => {
     if (surveyReason) return
     setSurveyReason(reason)
-    fetch("/api/survey", {
+    fetch(`${API_BASE}/api/survey`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ category: category.id, reason, adjustCount }),
@@ -198,7 +220,7 @@ export function MobileComparePage({
     if (feedbackGiven) return
     setFeedbackGiven(rating)
     if (adjustCount >= 3) setShowSurveyCard(true)
-    fetch("/api/feedback", {
+    fetch(`${API_BASE}/api/feedback`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ category: category.id, axisValues: axes, rating, text: leftText }),
@@ -403,7 +425,10 @@ export function MobileComparePage({
                 }}
               >
                 <button
-                  onClick={() => setShowHelpCard(false)}
+                  onClick={() => {
+                    setShowHelpCard(false)
+                    setHintDismissed(true)
+                  }}
                   style={{
                     position: "absolute",
                     top: 8,
@@ -472,6 +497,47 @@ export function MobileComparePage({
                 </span>
               )}
             </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {canShare && (
+                <button
+                  onClick={handleShare}
+                  className="btn-arcade"
+                  style={{
+                    background: "#fff",
+                    color: INK,
+                    fontWeight: 800,
+                    padding: "5px 10px",
+                    borderRadius: 6,
+                    border: "1.5px solid #111",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 4,
+                    lineHeight: 1,
+                  }}
+                  title="다른 앱으로 공유"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="18" cy="5" r="3" />
+                    <circle cx="6" cy="12" r="3" />
+                    <circle cx="18" cy="19" r="3" />
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                  </svg>
+                </button>
+              )}
 
             <div style={{ position: "relative" }}>
               <button
@@ -555,6 +621,7 @@ export function MobileComparePage({
                 </div>
               )}
             </div>
+            </div>
           </div>
 
           <div
@@ -583,11 +650,36 @@ export function MobileComparePage({
           {hasCopied && adjustCount > 0 && (
             <div
               className="font-pixel"
-              style={{ fontSize: 9, color: "#888", textAlign: "right", marginTop: 4 }}
+              style={{
+                fontSize: 9,
+                color: "#888",
+                textAlign: "right",
+                marginTop: 4,
+                display: "flex",
+                justifyContent: "flex-end",
+                alignItems: "center",
+                gap: 8,
+              }}
             >
-              RE-ADJUSTMENT: {adjustCount} TIMES
-              {adjustCount < 3 && (
-                <span style={{ color: INK, fontWeight: "bold" }}> (3회 시 힌트 오픈)</span>
+              <span>RE-ADJUSTMENT: {adjustCount} TIMES</span>
+              {adjustCount >= 3 && (
+                <button
+                  onClick={() => setShowHelpCard(true)}
+                  className="btn-arcade font-pixel"
+                  style={{
+                    background: "#fff",
+                    color: INK,
+                    border: "1.5px solid #111",
+                    borderRadius: 6,
+                    padding: "3px 8px",
+                    fontSize: 9,
+                    fontWeight: 700,
+                    letterSpacing: 0.5,
+                    cursor: "pointer",
+                  }}
+                >
+                  HINT
+                </button>
               )}
             </div>
           )}
