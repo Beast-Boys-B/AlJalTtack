@@ -14,24 +14,10 @@ import {
   generateRefinedPrompt,
   detectCategoryAxes,
   type Category,
-  type CategoryId,
 } from "../categories"
 import { playArcadeSound } from "../lib/sound"
-import counselingBadge from "../assets/category-badges/counseling.svg"
-import medicalBadge from "../assets/category-badges/medical.svg"
-import travelBadge from "../assets/category-badges/travel.svg"
-import photoBadge from "../assets/category-badges/photo.svg"
-import writingBadge from "../assets/category-badges/writing.svg"
+import { CATEGORY_BADGES } from "../lib/categoryBadges"
 
-// Custom icon+title artwork per category, replacing the emoji+text badge.
-// Native viewBox 222 x 99 for all five.
-const CATEGORY_BADGES: Record<CategoryId, string> = {
-  counseling: counselingBadge,
-  medical: medicalBadge,
-  travel: travelBadge,
-  photo: photoBadge,
-  writing: writingBadge,
-}
 // Width is "auto" (not a fixed px computed from one shared aspect ratio) so
 // each category's own SVG intrinsic ratio is preserved even if it differs
 // from the others (e.g. medical's viewBox is wider than the rest).

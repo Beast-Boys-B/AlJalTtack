@@ -8,6 +8,12 @@ import {
 } from "../categories"
 import { playArcadeSound } from "../lib/sound"
 import { renderHighlightedText, type HighlightEntry } from "../lib/highlight"
+import { CATEGORY_BADGES } from "../lib/categoryBadges"
+
+// Width is "auto" (not a fixed px computed from one shared aspect ratio) so
+// each category's own SVG intrinsic ratio is preserved even if it differs
+// from the others (e.g. medical's viewBox is wider than the rest).
+const CATEGORY_BADGE_H = 20
 
 // "어떤 점이 어려우셨나요?" 설문 선택지(F-공21) — 팀이 아직 확정한 문구가
 // 아니라 Claude 제안 임시안. api/survey.ts의 ALLOWED_REASONS와 반드시 동일하게 유지.
@@ -269,9 +275,11 @@ export function ComparePage({
               )
             })()}
           </span>
-          <span style={{ fontSize: 15, fontWeight: 800, color: INK }}>
-            {category.icon} {category.name}
-          </span>
+          <img
+            src={CATEGORY_BADGES[category.id]}
+            alt={category.name}
+            style={{ height: CATEGORY_BADGE_H, width: "auto" }}
+          />
           {destination && (
             <span
               style={{
