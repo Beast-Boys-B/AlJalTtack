@@ -335,12 +335,15 @@ export function MobileLibraryPage({
                   onTouchEnd={handleTouchEnd}
                   style={{
                     background: catColor,
-                    padding: "8px 16px 6px",
+                    // 접기 제스처를 잡는 영역이 너무 얇다는 피드백 — 위아래
+                    // 패딩을 늘려 터치 타겟을 키움(보이는 핸들 바 크기는 그대로).
+                    padding: "18px 16px 16px",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
                     flexShrink: 0,
                     cursor: "grab",
+                    touchAction: "none",
                   }}
                 >
                   <div
