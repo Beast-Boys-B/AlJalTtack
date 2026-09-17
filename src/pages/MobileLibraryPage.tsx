@@ -4,7 +4,7 @@
 // MobileLibraryPage (mobile/src/App.tsx, ~line 4630) — layout reference
 // only. All data comes from the real ../categories module, same as the
 // desktop LibraryPage.
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { LIME, INK, IVORY, AXIS_COLORS } from "../theme"
 import {
   CATEGORIES,
@@ -26,23 +26,42 @@ export function MobileLibraryPage({
 }) {
   const [activeTab, setActiveTab] = useState<CategoryId>("counseling")
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null)
-  const [dragY, setDragY] = useState(0)
+  // 중앙 바를 위로 끌면 무조건 전체(카테고리 탭까지) 덮게 펼쳐지고, 아래로
+  // 끌면 무조건 원래 자리로 돌아온다 — 중간에 멈추는 상태 없음.
+  const [expanded, setExpanded] = useState(false)
   const touchStartRef = useRef<number | null>(null)
+
+  // 접혔을 땐 해시태그 카드 바로 아래(카드들은 안 가림), 펼치면 "프롬프트
+  // 라이브러리" 헤더 아래 선까지(탭·카드 다 덮음) — 시트의 top으로 쓴다.
+  // collapsedTop은 카드를 누르는 순간 grid 바닥의 화면상 y좌표를 재서 고정한다.
+  const headerRef = useRef<HTMLDivElement>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const [headerBottom, setHeaderBottom] = useState(0)
+  const [collapsedTop, setCollapsedTop] = useState(0)
+  useEffect(() => {
+    const measure = () => setHeaderBottom(headerRef.current?.getBoundingClientRect().bottom ?? 0)
+    measure()
+    window.addEventListener("resize", measure)
+    return () => window.removeEventListener("resize", measure)
+  }, [])
+
+  const DETAIL_GAP = 12
+
+  const openDetail = (idx: number | null) => {
+    setSelectedIdx(idx)
+    setExpanded(false)
+    if (idx !== null) setCollapsedTop((gridRef.current?.getBoundingClientRect().bottom ?? 0) + DETAIL_GAP)
+  }
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartRef.current = e.touches[0].clientY
   }
 
-  const handleTouchMove = (e: React.TouchEvent) => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartRef.current === null) return
-    const currentY = e.touches[0].clientY
-    const delta = currentY - touchStartRef.current
-    if (delta > 0) setDragY(delta)
-  }
-
-  const handleTouchEnd = () => {
-    if (dragY > 90) setSelectedIdx(null)
-    setDragY(0)
+    const delta = e.changedTouches[0].clientY - touchStartRef.current
+    if (delta < -20) setExpanded(true)
+    else if (delta > 20) setExpanded(false)
     touchStartRef.current = null
   }
 
@@ -62,6 +81,7 @@ export function MobileLibraryPage({
   const handleTabChange = (id: CategoryId) => {
     setActiveTab(id)
     setSelectedIdx(null)
+    setExpanded(false)
     if (soundEnabled) playArcadeSound("select")
   }
 
@@ -77,6 +97,7 @@ export function MobileLibraryPage({
     >
       {/* Header */}
       <div
+        ref={headerRef}
         style={{
           padding: "12px 16px",
           display: "flex",
@@ -208,7 +229,7 @@ export function MobileLibraryPage({
       >
         {cat.hashtags.length > 0 ? (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+            <div ref={gridRef} style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
               {cat.hashtags.map((item, idx) => {
                 const isSelected = selectedIdx === idx
                 return (
@@ -217,7 +238,7 @@ export function MobileLibraryPage({
                     className="btn-arcade"
                     onClick={() => {
                       if (soundEnabled) playArcadeSound("select")
-                      setSelectedIdx(isSelected ? null : idx)
+                      openDetail(isSelected ? null : idx)
                     }}
                     style={{
                       background: isSelected ? `${catColor}10` : "#fff",
@@ -266,27 +287,33 @@ export function MobileLibraryPage({
               })}
             </div>
 
-            {/* Inline expand with drag-down-to-dismiss handle */}
+            {/* 바텀시트 — 헤더의 중앙 바를 위/아래로 끌면 "프롬프트 라이브러리"
+                헤더 아래 선까지만 덮는 전체 높이와 원래(peek) 높이, 이 둘 사이만
+                스냅한다(중간 정지 없음). bottom을 고정하고 height만 애니메이션해서
+                항상 카드(둥근 모서리·테두리) 모양을 유지한 채 스르륵 늘어난다. */}
             {selectedItem && (
               <div
                 className="animate-fade-up"
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
                 style={{
+                  position: "fixed",
+                  left: 12,
+                  right: 12,
+                  bottom: 16,
+                  height: `calc(100vh - ${(expanded ? headerBottom - 6 : collapsedTop)}px - 16px)`,
+                  transition: "height 0.3s ease",
                   background: "#fff",
                   border: `2.5px solid ${catColor}`,
                   borderRadius: 14,
                   overflow: "hidden",
                   boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
-                  maxHeight: "75vh",
                   display: "flex",
                   flexDirection: "column",
-                  transform: `translateY(${Math.max(0, dragY)}px)`,
-                  transition: dragY === 0 ? "transform 0.25s ease" : "none",
+                  zIndex: 50,
                 }}
               >
                 <div
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={handleTouchEnd}
                   style={{
                     background: catColor,
                     padding: "8px 16px 6px",
