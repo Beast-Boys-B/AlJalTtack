@@ -6,7 +6,7 @@ import {
   generateRefinedPrompt,
   type CategoryId,
 } from "../../../src/categories"
-import { LIME, INK, IVORY } from "../../../src/theme"
+import { LIME, INK, IVORY, AXIS_COLORS } from "../../../src/theme"
 
 // 사이드패널은 폭이 좁아서(보통 320~400px) 웹앱의 3단 그리드(ComparePage)를
 // 그대로 쓰지 않고 세로 1단으로 재구성한 MVP다. 카테고리 감지·프롬프트
@@ -88,8 +88,23 @@ export function SidePanelApp() {
     [text, category, axes],
   )
 
+  const [copySuccess, setCopySuccess] = useState(false)
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(refined).catch(() => {})
+    navigator.clipboard
+      .writeText(refined)
+      .then(() => {
+        setCopySuccess(true)
+        setTimeout(() => setCopySuccess(false), 2000)
+      })
+      .catch(() => {})
+  }
+
+  // Web Share API 미지원 브라우저(chrome 사이드패널 등)에서는 버튼 자체를
+  // 렌더링하지 않는다 — 모바일 웹앱(MobileComparePage)과 동일한 패턴.
+  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function"
+  const handleShare = () => {
+    navigator.share?.({ text: refined }).catch(() => {})
   }
 
   const handleSendTo = async (target: SendTarget) => {
@@ -136,25 +151,18 @@ export function SidePanelApp() {
         알잘딱
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {CATEGORIES.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => handleCategoryChange(c.id)}
-            style={{
-              padding: "6px 10px",
-              borderRadius: 999,
-              border: `1.5px solid ${c.id === categoryId ? INK : "#ccc"}`,
-              background: c.id === categoryId ? CATEGORY_COLORS[c.id] : "#fff",
-              color: INK,
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-          >
-            {c.icon} {c.name}
-          </button>
-        ))}
+      {/* 카테고리 2줄(2개+3개) 그리드 — MobileStartPage와 동일한 배치 */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6 }}>
+          {CATEGORIES.slice(0, 2).map((c) => (
+            <CategoryButton key={c.id} c={c} active={c.id === categoryId} onClick={handleCategoryChange} />
+          ))}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+          {CATEGORIES.slice(2, 5).map((c) => (
+            <CategoryButton key={c.id} c={c} active={c.id === categoryId} onClick={handleCategoryChange} />
+          ))}
+        </div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -184,60 +192,87 @@ export function SidePanelApp() {
         />
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {category.axes.map((axis) => (
-          <div key={axis.id} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#666" }}>{axis.label}</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-              {axis.options.map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => {
-                    setAxes((prev) => ({ ...prev, [axis.id]: opt }))
-                    setSendStatus({})
-                  }}
-                  style={{
-                    padding: "4px 9px",
-                    borderRadius: 6,
-                    border: `1.5px solid ${axes[axis.id] === opt ? INK : "#ddd"}`,
-                    background: axes[axis.id] === opt ? LIME : "#fff",
-                    fontSize: 11.5,
-                    cursor: "pointer",
-                  }}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
+      {/* 완성된 프롬프트 — 라벨 옆에 공유/복사 아이콘 버튼(MobileComparePage AI OUTPUT 줄과 동일 패턴) */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#666" }}>정제된 프롬프트</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#666" }}>완성된 프롬프트</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {canShare && (
+              <button onClick={handleShare} disabled={!refined} style={iconBtnStyle(!refined)} title="다른 앱으로 공유">
+                <ShareIcon />
+              </button>
+            )}
+            <button onClick={handleCopy} disabled={!refined} style={iconBtnStyle(!refined, copySuccess)} title="프롬프트 복사">
+              {copySuccess ? <CheckIcon /> : <CopyIcon />}
+            </button>
+          </div>
+        </div>
         <div
           style={{
             whiteSpace: "pre-wrap",
             fontSize: 12.5,
             lineHeight: 1.6,
             background: "#fff",
-            border: "1.5px solid #ddd",
+            border: `2px solid ${INK}`,
             borderRadius: 10,
             padding: 12,
-            minHeight: 80,
+            minHeight: 100,
             color: INK,
           }}
         >
-          {refined || (
-            <span style={{ color: "#aaa" }}>내용을 입력하면 여기에 정제된 프롬프트가 표시됩니다.</span>
-          )}
+          {refined || <span style={{ color: "#aaa" }}>완성된 프롬프트가 여기에 표시돼요</span>}
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={handleCopy} disabled={!refined} style={actionBtnStyle(false, !refined)}>
-          📋 복사
-        </button>
+      {/* 세부 조정 — 축(axis) 선택. MobileComparePage와 동일하게 축별로 색을 돌려쓴다 */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: INK }}>세부 조정</div>
+        {category.axes.map((axis, axisIdx) => {
+          const axisColor = AXIS_COLORS[axisIdx] ?? "#64748B"
+          return (
+            <div key={axis.id} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "#666" }}>
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: axisColor,
+                    display: "inline-block",
+                    flexShrink: 0,
+                  }}
+                />
+                {axis.label}
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                {axis.options.map((opt) => {
+                  const active = axes[axis.id] === opt
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => {
+                        setAxes((prev) => ({ ...prev, [axis.id]: opt }))
+                        setSendStatus({})
+                      }}
+                      style={{
+                        padding: "4px 9px",
+                        borderRadius: 6,
+                        border: active ? `2px solid ${axisColor}` : "1.5px solid #ddd",
+                        background: active ? `${axisColor}18` : "#fff",
+                        fontSize: 11.5,
+                        fontWeight: active ? 800 : 600,
+                        color: INK,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -298,4 +333,86 @@ function actionBtnStyle(primary: boolean, disabled: boolean): CSSProperties {
 
 function statusStyle(color: string): CSSProperties {
   return { fontSize: 12, color, fontWeight: 700 }
+}
+
+function iconBtnStyle(disabled: boolean, active = false): CSSProperties {
+  return {
+    background: active ? LIME : "#fff",
+    color: disabled ? "#999" : INK,
+    padding: "5px 8px",
+    borderRadius: 6,
+    border: `1.5px solid ${INK}`,
+    cursor: disabled ? "default" : "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    lineHeight: 1,
+    opacity: disabled ? 0.5 : 1,
+    transition: "background 0.2s ease",
+  }
+}
+
+function CategoryButton({
+  c,
+  active,
+  onClick,
+}: {
+  c: (typeof CATEGORIES)[number]
+  active: boolean
+  onClick: (id: CategoryId) => void
+}) {
+  const cc = CATEGORY_COLORS[c.id]
+  return (
+    <button
+      onClick={() => onClick(c.id)}
+      style={{
+        width: "100%",
+        padding: "8px 4px",
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 800,
+        border: `2px solid ${active ? cc : "#111"}`,
+        background: active ? cc : "#fff",
+        color: active ? "#fff" : INK,
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 4,
+        boxSizing: "border-box",
+      }}
+    >
+      <span>{c.icon}</span>
+      <span>{c.name}</span>
+    </button>
+  )
+}
+
+function ShareIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+    </svg>
+  )
+}
+
+function CopyIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  )
 }
