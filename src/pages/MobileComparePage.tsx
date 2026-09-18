@@ -8,6 +8,8 @@
 // re-adjustment counting, copy-failure fallback) are ported from the real
 // desktop ComparePage.tsx, which is the source of truth for behavior.
 import { useState, useRef, useCallback, useEffect } from "react"
+import { Capacitor } from "@capacitor/core"
+import { Share } from "@capacitor/share"
 import { LIME, INK, IVORY, AXIS_COLORS } from "../theme"
 import {
   FIXED_RULES,
@@ -17,6 +19,7 @@ import {
 } from "../categories"
 import { playArcadeSound } from "../lib/sound"
 import { CATEGORY_BADGES } from "../lib/categoryBadges"
+import { renderHighlightedText, type HighlightEntry } from "../lib/highlight"
 
 // Width is "auto" (not a fixed px computed from one shared aspect ratio) so
 // each category's own SVG intrinsic ratio is preserved even if it differs
@@ -82,6 +85,14 @@ export function MobileComparePage({
   const [showSurveyCard, setShowSurveyCard] = useState(false)
   const [surveyReason, setSurveyReason] = useState<string | null>(null)
 
+  // Axis highlight system — ComparePage.tsx(데스크톱)에는 있었는데 모바일
+  // 페이지엔 포팅이 안 돼 있던 부분(축 조정 시 바뀐 부분 색칠 표시가 안 뜨던 버그).
+  const [highlights, setHighlights] = useState<HighlightEntry[]>([])
+  const [neutralFlash, setNeutralFlash] = useState(false)
+  const highlightTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  )
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // 원래 복사 버튼(AI OUTPUT 줄)이 스크롤로 화면 밖(고정 서브헤더 아래)으로
@@ -113,28 +124,71 @@ export function MobileComparePage({
     }
   }, [])
 
+  const addHighlight = useCallback((searchText: string, color: string) => {
+    const id = `hl-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const entry: HighlightEntry = { id, searchText, color, fadingOut: false }
+
+    setHighlights((prev) => {
+      // replace any existing highlight with same color (same axis)
+      const filtered = prev.filter((h) => h.color !== color)
+      return [...filtered, entry]
+    })
+
+    // Clear any previous timer for this color slot
+    for (const [tid, timer] of highlightTimersRef.current.entries()) {
+      if (tid.startsWith(color)) {
+        clearTimeout(timer)
+        highlightTimersRef.current.delete(tid)
+      }
+    }
+
+    const fadeTimer = setTimeout(() => {
+      setHighlights((prev) =>
+        prev.map((h) => (h.id === id ? { ...h, fadingOut: true } : h)),
+      )
+      const removeTimer = setTimeout(() => {
+        setHighlights((prev) => prev.filter((h) => h.id !== id))
+      }, 700)
+      highlightTimersRef.current.set(`${color}-remove-${id}`, removeTimer)
+    }, 3000)
+    highlightTimersRef.current.set(`${color}-fade-${id}`, fadeTimer)
+  }, [])
+
   const refine = useCallback(
-    (text: string, ax: Record<string, string>) => {
+    (
+      text: string,
+      ax: Record<string, string>,
+      highlightInfo?: { text: string; color: string },
+    ) => {
       setIsRefining(true)
       if (debounceRef.current) clearTimeout(debounceRef.current)
       debounceRef.current = setTimeout(() => {
-        setRefinedPrompt(generateRefinedPrompt(text, category, ax, destination))
+        const newPrompt = generateRefinedPrompt(text, category, ax, destination)
+        setRefinedPrompt(newPrompt)
         setIsRefining(false)
+        if (highlightInfo && newPrompt.includes(highlightInfo.text)) {
+          addHighlight(highlightInfo.text, highlightInfo.color)
+        }
       }, 500)
     },
-    [category, destination],
+    [category, destination, addHighlight],
   )
 
   useEffect(() => {
     refine(leftText, axes)
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
+      highlightTimersRef.current.forEach((t) => clearTimeout(t))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleLeftChange = (val: string) => {
     setLeftText(val)
+    // Direct text edit → clear axis highlights, show neutral gray flash
+    setHighlights([])
+    setNeutralFlash(true)
+    setTimeout(() => setNeutralFlash(false), 1600)
     if (hasCopied) {
       const next = adjustCount + 1
       setAdjustCount(next)
@@ -153,7 +207,9 @@ export function MobileComparePage({
       setAdjustCount(next)
       if (next >= 3 && !hintDismissed) setShowHelpCard(true)
     }
-    refine(leftText, newAxes)
+    const axisIndex = category.axes.findIndex((a) => a.id === axisId)
+    const axisColor = AXIS_COLORS[axisIndex] ?? "#64748B"
+    refine(leftText, newAxes, { text: option, color: axisColor })
   }
 
   const markCopied = () => {
@@ -202,17 +258,29 @@ export function MobileComparePage({
       })
   }
 
-  // [복사]와 별개로 두는 공유 버튼 — Web Share API. 사용자가 앱 하나를 골라 텍스트를
-  // 바로 넘길 수 있어(오버레이/자동삽입 없이 "텍스트만 건네준다"는 기존 스코프 그대로).
-  // 미지원 기기에서는 버튼 자체를 렌더링하지 않는다(아래 canShare).
+  // [복사]와 별개로 두는 공유 버튼 — 사용자가 앱 하나를 골라 텍스트를 바로
+  // 넘길 수 있어(오버레이/자동삽입 없이 "텍스트만 건네준다"는 기존 스코프 그대로).
+  // APK로 패키징되면 안드로이드 System WebView에는 Web Share API
+  // (navigator.share)가 아예 구현돼있지 않아서(모바일 크롬과 다름) 버튼이
+  // 조용히 사라지는 버그가 있었다 — 네이티브에서는 @capacitor/share를 쓰고,
+  // 실제 모바일 브라우저에서는 기존 Web Share API를 그대로 쓴다.
+  const isNative = Capacitor.isNativePlatform()
   const handleShare = () => {
     if (soundEnabled) playArcadeSound("copy")
+    if (isNative) {
+      Share.share({ text: refinedPrompt }).catch(() => {
+        // 사용자가 공유 시트를 취소한 경우도 여기로 들어오는데, 실패로
+        // 취급할 일이 아니라 조용히 무시한다.
+      })
+      return
+    }
     navigator.share?.({ text: refinedPrompt }).catch(() => {
       // 사용자가 공유 시트를 취소한 경우(AbortError)도 여기로 들어오는데,
       // 실패로 취급할 일이 아니라 조용히 무시한다.
     })
   }
-  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function"
+  const canShare =
+    isNative || (typeof navigator !== "undefined" && typeof navigator.share === "function")
 
   const sendSurvey = (reason: string) => {
     if (surveyReason) return
@@ -679,7 +747,7 @@ export function MobileComparePage({
 
           <div
             style={{
-              background: "#fff",
+              background: neutralFlash ? "#F3F4F6" : "#fff",
               border: `2.5px solid ${INK}`,
               borderRadius: 12,
               padding: "14px",
@@ -692,12 +760,16 @@ export function MobileComparePage({
               overflowY: "auto",
               boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
               opacity: isRefining ? 0.6 : 1,
-              transition: "opacity 0.2s",
+              transition: "background-color 0.5s ease, opacity 0.2s",
               boxSizing: "border-box",
             }}
             className="scrollbar-hide"
           >
-            {refinedPrompt || <span style={{ color: "#aaa" }}>완성된 프롬프트가 여기에 표시돼요</span>}
+            {refinedPrompt ? (
+              renderHighlightedText(refinedPrompt, highlights)
+            ) : (
+              <span style={{ color: "#aaa" }}>완성된 프롬프트가 여기에 표시돼요</span>
+            )}
           </div>
 
           {hasCopied && adjustCount > 0 && (
