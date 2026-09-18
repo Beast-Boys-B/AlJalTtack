@@ -217,8 +217,8 @@ export function ComparePage({
   const SERVICES = [
     { name: "Gemini", url: "https://gemini.google.com" },
     { name: "Claude", url: "https://claude.ai" },
-    { name: "ChatGPT", url: "https://chat.openai.com" },
-    { name: "Grok", url: "https://grok.x.ai" },
+    { name: "ChatGPT", url: "https://chatgpt.com" },
+    { name: "Grok", url: "https://grok.com" },
   ]
 
   return (
