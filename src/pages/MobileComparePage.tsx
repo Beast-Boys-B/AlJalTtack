@@ -985,15 +985,17 @@ export function MobileComparePage({
 
         <hr style={{ margin: "16px 16px 0", border: "none", borderTop: "2px dashed #111", opacity: 0.3 }} />
 
-        {/* ⑤ AI 서비스 연결 버튼 */}
+        {/* ⑤ AI 서비스 연결 버튼 — target="_blank"을 일부러 안 씀. 모바일
+            WebView엔 "새 탭" 개념이 없는데 이 속성이 새 창 열기 요청을
+            하나 더 만들어서, 정상 이동(앱으로 감)과 별개로 브라우저가
+            중복으로 뜨는 원인으로 의심돼 제거(챗GPT에서 실기기로 확인된
+            증상: 앱이 먼저 뜨고 브라우저가 뒤이어 뜸). */}
         <div style={{ padding: "14px 16px 0" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
             {SERVICES.map((s) => (
               <a
                 key={s.name}
                 href={s.url}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="btn-arcade"
                 style={{
                   fontSize: 12,
