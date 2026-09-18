@@ -1,7 +1,10 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { Capacitor } from "@capacitor/core"
+import { App as CapacitorApp } from "@capacitor/app"
 import { CATEGORIES, type CategoryId } from "./categories"
 import { ArcadeHeaderBar } from "./components/ArcadeHeaderBar"
 import { useIsMobile } from "./lib/useIsMobile"
+import { INK, LIME } from "./theme"
 import { LandingPage } from "./pages/LandingPage"
 import { StartPage } from "./pages/StartPage"
 import { ComparePage } from "./pages/ComparePage"
@@ -30,6 +33,45 @@ export default function App() {
   const [crtEnabled, setCrtEnabled] = useState(false)
   const [credits, setCredits] = useState(99)
   const [score, setScore] = useState(1250)
+
+  // 안드로이드 하드웨어/제스처 뒤로가기(APK 전용, Capacitor.isNativePlatform()이
+  // 아니면 리스너 자체를 안 붙인다 — 브라우저에는 이 이벤트가 없다). 페이지
+  // 이동이 전부 상태 기반(URL 히스토리 없음)이라 화면별 "뒤로"를 직접 매핑해야
+  // 한다. 최상위 화면(모바일 입력 화면)에서는 실수로 앱이 바로 꺼지지 않게
+  // 두 번 눌러야 종료되는 패턴을 쓴다.
+  const [showExitToast, setShowExitToast] = useState(false)
+  const exitArmedRef = useRef(false)
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return
+
+    const listenerPromise = CapacitorApp.addListener("backButton", () => {
+      if (page === 3) {
+        setPage(previousPage)
+        return
+      }
+      if (page === 2) {
+        setPage(1)
+        return
+      }
+      if (exitArmedRef.current) {
+        CapacitorApp.exitApp()
+        return
+      }
+      exitArmedRef.current = true
+      setShowExitToast(true)
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current)
+      exitTimerRef.current = setTimeout(() => {
+        exitArmedRef.current = false
+        setShowExitToast(false)
+      }, 2000)
+    })
+
+    return () => {
+      listenerPromise.then((handle) => handle.remove())
+    }
+  }, [page, previousPage])
 
   const cat = CATEGORIES.find((c) => c.id === selectedCategory)
   const addScore = (pts: number) => setScore((prev) => prev + pts)
@@ -217,6 +259,27 @@ export default function App() {
           </div>
         )}
       </div>
+      {showExitToast && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 24,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: INK,
+            color: LIME,
+            padding: "10px 20px",
+            borderRadius: 999,
+            fontSize: 13,
+            fontWeight: 700,
+            fontFamily: "'Noto Sans KR', sans-serif",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
+            zIndex: 999,
+          }}
+        >
+          한 번 더 누르면 종료됩니다
+        </div>
+      )}
     </div>
   )
 }
