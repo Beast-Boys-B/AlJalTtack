@@ -41,18 +41,6 @@ const PRESSED_AXIS_BTN: Record<CategoryId, { left: string; mid: string; right: s
   writing: { left: writingLeftPressed, mid: writingMidPressed, right: writingRightPressed },
 }
 
-// 좌/우 끝 버튼은 둥근 모서리 이미지를 원래 비율로만 그리고, 텍스트가 길어서
-// 버튼이 그보다 넓어지면 나머지는 이 단색으로 채운다 — 각 이미지의 평평한 쪽
-// 가장자리 픽셀 색을 그대로 뽑은 값이라 이미지와 이어지는 부분이 티 나지 않는다.
-const AXIS_BTN_FILL = "#E6E5E5"
-const PRESSED_AXIS_BTN_FILL: Record<CategoryId, string> = {
-  counseling: "#B4D8CA",
-  medical: "#FF7575",
-  travel: "#15D7FA",
-  photo: "#C393FF",
-  writing: "#FFA488",
-}
-
 // 같은 축(가로줄) 안의 버튼들은 폭이 같아야 해서, 가장 긴 옵션 텍스트 기준으로
 // 그 줄의 버튼 폭을 캔버스로 측정해 통일한다. 굵은 글씨(선택 시) 기준으로 재서
 // 선택이 바뀌어도 폭이 흔들리지 않게 한다.
@@ -67,13 +55,8 @@ function measureTextWidth(text: string): number {
   measureCtx.font = AXIS_BTN_FONT
   return measureCtx.measureText(text).width
 }
-// 양 끝 버튼은 둥근 모서리 이미지를 원래 비율(버튼 높이 기준 약 2:1)로 붙이는데,
-// 버튼이 그 이미지 자연폭보다 좁으면 모서리 곡선이 잘려서 각지게 보인다.
-// 그래서 버튼 폭은 텍스트 폭과 이 최소폭 중 큰 쪽을 쓴다.
-const AXIS_CAP_MIN_WIDTH = 90
 function axisButtonWidth(options: string[]): number {
-  const textWidth = Math.max(...options.map((opt) => measureTextWidth(opt))) + AXIS_BTN_PADDING_X
-  return Math.max(textWidth, AXIS_CAP_MIN_WIDTH)
+  return Math.max(...options.map((opt) => measureTextWidth(opt))) + AXIS_BTN_PADDING_X
 }
 
 // 사이드패널은 폭이 좁아서(보통 320~400px) 웹앱의 3단 그리드(ComparePage)를
@@ -293,23 +276,13 @@ export function SidePanelApp() {
                 {axis.options.map((opt, optIdx) => {
                   const active = axes[axis.id] === opt
                   const pos = optIdx === 0 ? "left" : optIdx === axis.options.length - 1 ? "right" : "mid"
-                  // 끝 버튼(좌/우)은 둥근 모서리가 찌그러지지 않게 원래 비율 그대로 그
-                  // 쪽에 붙이고, 텍스트가 길어 버튼이 더 넓어지면 나머지는 이미지
-                  // 가장자리와 같은 색의 단색으로 채운다(래스터 이중겹침으로 인한
-                  // 이음매가 생기지 않게).
-                  const fill = active ? PRESSED_AXIS_BTN_FILL[categoryId] : AXIS_BTN_FILL
-                  const img =
-                    pos === "mid"
-                      ? active
-                        ? PRESSED_AXIS_BTN[categoryId].mid
+                  const bg = active
+                    ? PRESSED_AXIS_BTN[categoryId][pos]
+                    : pos === "left"
+                      ? btnLeft
+                      : pos === "right"
+                        ? btnRight
                         : btnMid
-                      : pos === "left"
-                        ? active
-                          ? PRESSED_AXIS_BTN[categoryId].left
-                          : btnLeft
-                        : active
-                          ? PRESSED_AXIS_BTN[categoryId].right
-                          : btnRight
                   const key = `${axis.id}:${opt}`
                   const pressed = pressedAxisOpt === key
                   return (
@@ -329,10 +302,8 @@ export function SidePanelApp() {
                         marginLeft: optIdx === 0 ? 0 : -1,
                         padding: "6px 0",
                         border: "none",
-                        background: fill,
-                        backgroundImage: `url(${img})`,
-                        backgroundSize: pos === "mid" ? "100% 100%" : "auto 100%",
-                        backgroundPosition: pos === "right" ? "right top" : "left top",
+                        backgroundImage: `url(${bg})`,
+                        backgroundSize: "100% 100%",
                         backgroundRepeat: "no-repeat",
                         whiteSpace: "nowrap",
                         fontSize: 11.5,
