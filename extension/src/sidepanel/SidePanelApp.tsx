@@ -100,13 +100,6 @@ export function SidePanelApp() {
       .catch(() => {})
   }
 
-  // Web Share API 미지원 브라우저(chrome 사이드패널 등)에서는 버튼 자체를
-  // 렌더링하지 않는다 — 모바일 웹앱(MobileComparePage)과 동일한 패턴.
-  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function"
-  const handleShare = () => {
-    navigator.share?.({ text: refined }).catch(() => {})
-  }
-
   const handleSendTo = async (target: SendTarget) => {
     setSendStatus((prev) => ({ ...prev, [target.id]: undefined }))
     const tabs = await chrome.tabs.query({ url: target.urlPatterns })
@@ -197,11 +190,6 @@ export function SidePanelApp() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#666" }}>완성된 프롬프트</div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            {canShare && (
-              <button onClick={handleShare} disabled={!refined} style={iconBtnStyle(!refined)} title="다른 앱으로 공유">
-                <ShareIcon />
-              </button>
-            )}
             <button onClick={handleCopy} disabled={!refined} style={iconBtnStyle(!refined, copySuccess)} title="프롬프트 복사">
               {copySuccess ? <CheckIcon /> : <CopyIcon />}
             </button>
@@ -385,18 +373,6 @@ function CategoryButton({
       <span>{c.icon}</span>
       <span>{c.name}</span>
     </button>
-  )
-}
-
-function ShareIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="18" cy="5" r="3" />
-      <circle cx="6" cy="12" r="3" />
-      <circle cx="18" cy="19" r="3" />
-      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-    </svg>
   )
 }
 
