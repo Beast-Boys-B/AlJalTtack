@@ -6,7 +6,75 @@ import {
   generateRefinedPrompt,
   type CategoryId,
 } from "../../../src/categories"
-import { LIME, INK, IVORY, AXIS_COLORS } from "../../../src/theme"
+import { LIME, INK } from "../../../src/theme"
+import btnLeft from "./assets/axis-buttons/btn-left.png"
+import btnMid from "./assets/axis-buttons/btn-mid.png"
+import btnRight from "./assets/axis-buttons/btn-right.png"
+import counselingLeftPressed from "./assets/axis-buttons/pressed/counseling-left.png"
+import counselingMidPressed from "./assets/axis-buttons/pressed/counseling-mid.png"
+import counselingRightPressed from "./assets/axis-buttons/pressed/counseling-right.png"
+import medicalLeftPressed from "./assets/axis-buttons/pressed/medical-left.png"
+import medicalMidPressed from "./assets/axis-buttons/pressed/medical-mid.png"
+import medicalRightPressed from "./assets/axis-buttons/pressed/medical-right.png"
+import travelLeftPressed from "./assets/axis-buttons/pressed/travel-left.png"
+import travelMidPressed from "./assets/axis-buttons/pressed/travel-mid.png"
+import travelRightPressed from "./assets/axis-buttons/pressed/travel-right.png"
+import photoLeftPressed from "./assets/axis-buttons/pressed/photo-left.png"
+import photoMidPressed from "./assets/axis-buttons/pressed/photo-mid.png"
+import photoRightPressed from "./assets/axis-buttons/pressed/photo-right.png"
+import writingLeftPressed from "./assets/axis-buttons/pressed/writing-left.png"
+import writingMidPressed from "./assets/axis-buttons/pressed/writing-mid.png"
+import writingRightPressed from "./assets/axis-buttons/pressed/writing-right.png"
+import sendTargetClaude from "./assets/send-targets/claude.png"
+import sendTargetChatgpt from "./assets/send-targets/chatgpt.png"
+import sendTargetGemini from "./assets/send-targets/gemini.png"
+import sendTargetGrok from "./assets/send-targets/grok.png"
+
+const AXIS_BTN_HEIGHT = 28
+
+// 선택된(눌린) 버튼은 카테고리별로 색이 다른 이미지로 바뀐다
+const PRESSED_AXIS_BTN: Record<CategoryId, { left: string; mid: string; right: string }> = {
+  counseling: { left: counselingLeftPressed, mid: counselingMidPressed, right: counselingRightPressed },
+  medical: { left: medicalLeftPressed, mid: medicalMidPressed, right: medicalRightPressed },
+  travel: { left: travelLeftPressed, mid: travelMidPressed, right: travelRightPressed },
+  photo: { left: photoLeftPressed, mid: photoMidPressed, right: photoRightPressed },
+  writing: { left: writingLeftPressed, mid: writingMidPressed, right: writingRightPressed },
+}
+
+// 좌/우 끝 버튼은 둥근 모서리 이미지를 원래 비율로만 그리고, 텍스트가 길어서
+// 버튼이 그보다 넓어지면 나머지는 이 단색으로 채운다 — 각 이미지의 평평한 쪽
+// 가장자리 픽셀 색을 그대로 뽑은 값이라 이미지와 이어지는 부분이 티 나지 않는다.
+const AXIS_BTN_FILL = "#E6E5E5"
+const PRESSED_AXIS_BTN_FILL: Record<CategoryId, string> = {
+  counseling: "#B4D8CA",
+  medical: "#FF7575",
+  travel: "#15D7FA",
+  photo: "#C393FF",
+  writing: "#FFA488",
+}
+
+// 같은 축(가로줄) 안의 버튼들은 폭이 같아야 해서, 가장 긴 옵션 텍스트 기준으로
+// 그 줄의 버튼 폭을 캔버스로 측정해 통일한다. 굵은 글씨(선택 시) 기준으로 재서
+// 선택이 바뀌어도 폭이 흔들리지 않게 한다.
+const AXIS_BTN_FONT = "800 11.5px 'Noto Sans KR', sans-serif"
+const AXIS_BTN_PADDING_X = 20
+let measureCtx: CanvasRenderingContext2D | null = null
+function measureTextWidth(text: string): number {
+  if (!measureCtx) {
+    measureCtx = document.createElement("canvas").getContext("2d")
+  }
+  if (!measureCtx) return text.length * 12 // 캔버스를 못 만들면 대략치로 대체
+  measureCtx.font = AXIS_BTN_FONT
+  return measureCtx.measureText(text).width
+}
+// 양 끝 버튼은 둥근 모서리 이미지를 원래 비율(버튼 높이 기준 약 2:1)로 붙이는데,
+// 버튼이 그 이미지 자연폭보다 좁으면 모서리 곡선이 잘려서 각지게 보인다.
+// 그래서 버튼 폭은 텍스트 폭과 이 최소폭 중 큰 쪽을 쓴다.
+const AXIS_CAP_MIN_WIDTH = 90
+function axisButtonWidth(options: string[]): number {
+  const textWidth = Math.max(...options.map((opt) => measureTextWidth(opt))) + AXIS_BTN_PADDING_X
+  return Math.max(textWidth, AXIS_CAP_MIN_WIDTH)
+}
 
 // 사이드패널은 폭이 좁아서(보통 320~400px) 웹앱의 3단 그리드(ComparePage)를
 // 그대로 쓰지 않고 세로 1단으로 재구성한 MVP다. 카테고리 감지·프롬프트
@@ -21,19 +89,19 @@ const MAX_LEN = 500 // docs-공통 P-공8과 동일한 자연어 입력 상한
 interface SendTarget {
   id: string
   label: string
-  icon: string
+  image: string
   urlPatterns: string[]
 }
 const SEND_TARGETS: SendTarget[] = [
-  { id: "claude", label: "클로드", icon: "🟣", urlPatterns: ["https://claude.ai/*"] },
+  { id: "claude", label: "클로드", image: sendTargetClaude, urlPatterns: ["https://claude.ai/*"] },
   {
     id: "chatgpt",
     label: "챗GPT",
-    icon: "🟢",
+    image: sendTargetChatgpt,
     urlPatterns: ["https://chatgpt.com/*", "https://chat.openai.com/*"],
   },
-  { id: "gemini", label: "제미니", icon: "🔵", urlPatterns: ["https://gemini.google.com/*"] },
-  { id: "grok", label: "그록", icon: "⚫", urlPatterns: ["https://grok.x.ai/*", "https://grok.com/*"] },
+  { id: "gemini", label: "제미니", image: sendTargetGemini, urlPatterns: ["https://gemini.google.com/*"] },
+  { id: "grok", label: "그록", image: sendTargetGrok, urlPatterns: ["https://grok.x.ai/*", "https://grok.com/*"] },
 ]
 
 type SendStatus = "sent" | "no-tab" | "error"
@@ -67,6 +135,7 @@ export function SidePanelApp() {
   // 대상별로 독립적인 상태 — 하나 실패해도 다른 대상 버튼 상태에
   // 영향 없게 target.id로 키를 나눈다.
   const [sendStatus, setSendStatus] = useState<Record<string, SendStatus | undefined>>({})
+  const [pressedAxisOpt, setPressedAxisOpt] = useState<string | null>(null)
 
   const handleCategoryChange = (id: CategoryId) => {
     const next = CATEGORIES.find((c) => c.id === id)!
@@ -131,7 +200,7 @@ export function SidePanelApp() {
     <div
       style={{
         minHeight: "100vh",
-        background: IVORY,
+        background: "#F0F2F5",
         padding: 16,
         display: "flex",
         flexDirection: "column",
@@ -212,29 +281,37 @@ export function SidePanelApp() {
         </div>
       </div>
 
-      {/* 세부 조정 — 축(axis) 선택. MobileComparePage와 동일하게 축별로 색을 돌려쓴다 */}
+      {/* 세부 조정 — 축(axis) 선택 */}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ fontSize: 13, fontWeight: 800, color: INK }}>세부 조정</div>
-        {category.axes.map((axis, axisIdx) => {
-          const axisColor = AXIS_COLORS[axisIdx] ?? "#64748B"
+        {category.axes.map((axis) => {
+          const btnWidth = axisButtonWidth(axis.options)
           return (
             <div key={axis.id} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "#666" }}>
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background: axisColor,
-                    display: "inline-block",
-                    flexShrink: 0,
-                  }}
-                />
-                {axis.label}
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                {axis.options.map((opt) => {
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#666" }}>{axis.label}</div>
+              <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                {axis.options.map((opt, optIdx) => {
                   const active = axes[axis.id] === opt
+                  const pos = optIdx === 0 ? "left" : optIdx === axis.options.length - 1 ? "right" : "mid"
+                  // 끝 버튼(좌/우)은 둥근 모서리가 찌그러지지 않게 원래 비율 그대로 그
+                  // 쪽에 붙이고, 텍스트가 길어 버튼이 더 넓어지면 나머지는 이미지
+                  // 가장자리와 같은 색의 단색으로 채운다(래스터 이중겹침으로 인한
+                  // 이음매가 생기지 않게).
+                  const fill = active ? PRESSED_AXIS_BTN_FILL[categoryId] : AXIS_BTN_FILL
+                  const img =
+                    pos === "mid"
+                      ? active
+                        ? PRESSED_AXIS_BTN[categoryId].mid
+                        : btnMid
+                      : pos === "left"
+                        ? active
+                          ? PRESSED_AXIS_BTN[categoryId].left
+                          : btnLeft
+                        : active
+                          ? PRESSED_AXIS_BTN[categoryId].right
+                          : btnRight
+                  const key = `${axis.id}:${opt}`
+                  const pressed = pressedAxisOpt === key
                   return (
                     <button
                       key={opt}
@@ -242,18 +319,36 @@ export function SidePanelApp() {
                         setAxes((prev) => ({ ...prev, [axis.id]: opt }))
                         setSendStatus({})
                       }}
+                      onMouseDown={() => setPressedAxisOpt(key)}
+                      onMouseUp={() => setPressedAxisOpt(null)}
+                      onMouseLeave={() => setPressedAxisOpt(null)}
                       style={{
-                        padding: "4px 9px",
-                        borderRadius: 6,
-                        border: active ? `2px solid ${axisColor}` : "1.5px solid #ddd",
-                        background: active ? `${axisColor}18` : "#fff",
+                        flex: "0 0 auto",
+                        width: btnWidth,
+                        minHeight: AXIS_BTN_HEIGHT,
+                        marginLeft: optIdx === 0 ? 0 : -1,
+                        padding: "6px 0",
+                        border: "none",
+                        background: fill,
+                        backgroundImage: `url(${img})`,
+                        backgroundSize: pos === "mid" ? "100% 100%" : "auto 100%",
+                        backgroundPosition: pos === "right" ? "right top" : "left top",
+                        backgroundRepeat: "no-repeat",
+                        whiteSpace: "nowrap",
                         fontSize: 11.5,
                         fontWeight: active ? 800 : 600,
                         color: INK,
                         cursor: "pointer",
                       }}
                     >
-                      {opt}
+                      <span
+                        style={{
+                          display: "inline-block",
+                          transform: pressed ? "translateY(1px)" : "none",
+                        }}
+                      >
+                        {opt}
+                      </span>
                     </button>
                   )
                 })}
@@ -271,9 +366,9 @@ export function SidePanelApp() {
               key={target.id}
               onClick={() => handleSendTo(target)}
               disabled={!refined}
-              style={actionBtnStyle(true, !refined)}
+              style={actionBtnStyle(!refined)}
             >
-              {target.icon} {withRo(target.label)}
+              <img src={target.image} alt={target.label} style={{ height: 32, width: "auto" }} />
             </button>
           ))}
         </div>
@@ -305,16 +400,17 @@ export function SidePanelApp() {
   )
 }
 
-function actionBtnStyle(primary: boolean, disabled: boolean): CSSProperties {
+function actionBtnStyle(disabled: boolean): CSSProperties {
   return {
     flex: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     padding: "10px 0",
     borderRadius: 8,
     border: `1.5px solid ${INK}`,
-    background: disabled ? "#eee" : primary ? LIME : "#fff",
-    color: disabled ? "#999" : INK,
-    fontWeight: 800,
-    fontSize: 13,
+    background: "#fff",
+    opacity: disabled ? 0.4 : 1,
     cursor: disabled ? "default" : "pointer",
   }
 }
