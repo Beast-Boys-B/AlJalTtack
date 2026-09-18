@@ -13,11 +13,17 @@
     "typecheck:extension": "tsc --noEmit -p extension/tsconfig.json"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/share": "^8.0.2",
+    "@capacitor/splash-screen": "^8.0.2",
     "@neondatabase/serverless": "^1.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
     "@crxjs/vite-plugin": "^2.7.1",
     "@tailwindcss/vite": "^4.0.0",
     "@types/chrome": "^0.2.9",
