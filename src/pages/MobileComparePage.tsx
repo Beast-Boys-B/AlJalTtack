@@ -315,6 +315,25 @@ export function MobileComparePage({
     { name: "Grok", url: "https://grok.com" },
   ]
 
+  // 안드로이드에서 순수 https 링크는 각 서비스가 App Links를 어떻게
+  // 설정해뒀는지에 따라 결과가 갈린다(클로드만 앱 설치 시 앱으로 깔끔하게
+  // 이동, 나머지는 앱이 안 뜨거나 브라우저와 동시에 뜬다) — 우리가 제어할
+  // 수 없는 상대 서비스 설정이라, 대신 intent: URI로 패키지를 직접
+  // 지정해서 "앱 있으면 앱만, 없으면 browser_fallback_url로만" 열리게
+  // 강제한다. 클로드는 이미 정상 동작하므로 건드리지 않는다.
+  const ANDROID_PACKAGES: Record<string, string> = {
+    Gemini: "com.google.android.apps.bard",
+    ChatGPT: "com.openai.chatgpt",
+    Grok: "ai.x.grok",
+  }
+  const isAndroid = typeof navigator !== "undefined" && /Android/.test(navigator.userAgent)
+  const serviceHref = (name: string, url: string) => {
+    const pkg = ANDROID_PACKAGES[name]
+    if (!isAndroid || !pkg) return url
+    const withoutScheme = url.replace(/^https?:\/\//, "")
+    return `intent://${withoutScheme}#Intent;scheme=https;package=${pkg};S.browser_fallback_url=${encodeURIComponent(url)};end`
+  }
+
   const fixedRules = FIXED_RULES[category.id]
 
   return (
@@ -984,7 +1003,7 @@ export function MobileComparePage({
             {SERVICES.map((s) => (
               <a
                 key={s.name}
-                href={s.url}
+                href={serviceHref(s.name, s.url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-arcade"

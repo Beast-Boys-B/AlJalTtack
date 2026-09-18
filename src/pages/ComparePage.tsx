@@ -221,6 +221,22 @@ export function ComparePage({
     { name: "Grok", url: "https://grok.com" },
   ]
 
+  // 안드로이드 브라우저로 이 데스크톱 화면을 열었을 때도 모바일 화면과
+  // 동일한 App Links 문제가 생길 수 있어 같은 방식으로 대응한다 —
+  // 자세한 이유는 MobileComparePage.tsx의 동일 블록 주석 참고.
+  const ANDROID_PACKAGES: Record<string, string> = {
+    Gemini: "com.google.android.apps.bard",
+    ChatGPT: "com.openai.chatgpt",
+    Grok: "ai.x.grok",
+  }
+  const isAndroid = typeof navigator !== "undefined" && /Android/.test(navigator.userAgent)
+  const serviceHref = (name: string, url: string) => {
+    const pkg = ANDROID_PACKAGES[name]
+    if (!isAndroid || !pkg) return url
+    const withoutScheme = url.replace(/^https?:\/\//, "")
+    return `intent://${withoutScheme}#Intent;scheme=https;package=${pkg};S.browser_fallback_url=${encodeURIComponent(url)};end`
+  }
+
   return (
     <div
       style={{
@@ -943,7 +959,7 @@ export function ComparePage({
               {SERVICES.map((s) => (
                 <a
                   key={s.name}
-                  href={s.url}
+                  href={serviceHref(s.name, s.url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-arcade"
