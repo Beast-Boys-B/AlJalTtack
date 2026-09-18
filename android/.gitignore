@@ -38,19 +38,13 @@ proguard/
 # Android Studio captures folder
 captures/
 
-# IntelliJ
+# IntelliJ — 팀원마다 로컬 Android Studio 설정(기기 선택, 컴파일러 경로
+# 등)이 달라서 통째로 무시한다. 특정 파일만 골라 무시하던 예전 방식은
+# 새로 생기는 파일(AndroidProjectSystem.xml 등)을 놓쳐서 실수로 커밋되고,
+# 그러면 다른 팀원이 pull할 때 "untracked local file would be
+# overwritten" 충돌이 난다 — 실제로 있었던 문제.
 *.iml
-.idea/workspace.xml
-.idea/tasks.xml
-.idea/gradle.xml
-.idea/assetWizardSettings.xml
-.idea/dictionaries
-.idea/libraries
-# Android Studio 3 in .gitignore file.
-.idea/caches
-.idea/modules.xml
-# Comment next line if keeping position of elements in Navigation Editor is relevant for you
-.idea/navEditor.xml
+.idea/
 
 # Keystore files
 # Uncomment the following lines if you do not want to check your keystore files in.
