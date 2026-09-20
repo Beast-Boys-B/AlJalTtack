@@ -4,6 +4,34 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>알잘딱</title>
+    <style>
+      /* 세부 조정 축이 접혔다 펼쳐지면서 문서 높이가 바뀔 때, 세로 스크롤바가
+         생겼다 없어졌다 하며 사용 가능한 가로 폭이 매번 달라져서 카테고리
+         버튼·입력칸 등 %/flex 기반 레이아웃이 줄었다 커졌다 하는 문제 —
+         스크롤바 자리를 항상 미리 확보해두면(필요 없을 땐 안 보이지만 자리는
+         유지) 그 흔들림이 사라진다. 이 파일은 확장프로그램 전용이라 웹앱
+         공용 CSS(src/index.css)엔 영향 없음.
+         (extension/src/sidepanel/index.html) */
+      html {
+        scrollbar-gutter: stable;
+      }
+      /* 패널(#root의 실제 카드) 바깥쪽에 곡률을 보여주려면 그 뒤로 다른 색
+         배경이 비쳐야 해서, body를 카드 배경(#F0F2F5)보다 살짝 어두운
+         색으로 깔고 8px padding으로 카드를 안쪽에 띄운다. 카드 쪽에서
+         margin으로 띄우면 위쪽 margin이 body 바깥까지 겹침(margin
+         collapsing)돼서 위쪽만 여백이 더 커 보이는 버그가 생기므로,
+         반드시 body의 padding으로 처리한다. */
+      html {
+        background: #d9dde2;
+      }
+      body {
+        margin: 0;
+        padding: 8px;
+        box-sizing: border-box;
+        min-height: 100vh;
+        background: #d9dde2;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
