@@ -5,7 +5,7 @@ import {
   generateRefinedPrompt,
   type CategoryId,
 } from "../../../src/categories"
-import { LIME, INK } from "../../../src/theme"
+import { INK } from "../../../src/theme"
 import logoMark from "../../../src/assets/logo/mark.svg"
 import categoryPhotoCounseling from "./assets/category-photos/counseling.svg"
 import categoryPhotoMedical from "./assets/category-photos/medical.svg"
@@ -122,11 +122,20 @@ function withRo(label: string): string {
   return `${label}${hasBatchim ? "으로" : "로"}`
 }
 
+// AI사진생성의 "가로세로비율" 축(prd/AI사진생성.md > 축 1)만 예외 — 원문에서
+// 감지도 안 되고 기본값도 없어서, 사용자가 직접 클릭해서 고르기 전까진 이
+// 축만 아무 옵션도 선택 안 된 상태로 비워둔다(다른 축들은 전부 detected ??
+// options[0]로 항상 뭔가 선택돼 있음). 카테고리 스키마에 "기본값 없음" 같은
+// 공용 플래그가 아직 없어서 id를 직접 검사하는 임시방편 — 이런 축이 늘어나면
+// Axis 타입에 플래그를 추가하는 게 맞다(공유 파일이라 팀 논의 필요).
+const NO_DEFAULT_AXIS_IDS = new Set(["aspectRatio"])
+
 function buildInitialAxes(text: string, category: (typeof CATEGORIES)[number]) {
   const detected = detectCategoryAxes(text, category)
   const init: Record<string, string> = {}
   category.axes.forEach((a) => {
-    init[a.id] = detected[a.id] ?? a.options[0]
+    const value = detected[a.id] ?? (NO_DEFAULT_AXIS_IDS.has(a.id) ? undefined : a.options[0])
+    if (value) init[a.id] = value
   })
   return init
 }
@@ -248,19 +257,38 @@ export function SidePanelApp() {
     setAxes((prev) => ({ ...prev, ...detected }))
   }
 
-  const refined = useMemo(
-    () => (category ? generateRefinedPrompt(text, category, axes) : ""),
-    [text, category, axes],
-  )
+  // AI사진생성만 예외 — 가로세로비율은 기본값이 없어서(NO_DEFAULT_AXIS_IDS),
+  // 사용자가 직접 고르기 전까진 완성된 프롬프트를 만들지 않는다.
+  const needsAspectRatio = category?.id === "photo" && !axes["aspectRatio"]
+
+  const refined = useMemo(() => {
+    if (!category) return ""
+    // refined가 비어있으면 복사/바로 보내기 버튼도 기존 로직대로 같이 비활성화된다.
+    if (needsAspectRatio) return ""
+    return generateRefinedPrompt(text, category, axes)
+  }, [text, category, axes, needsAspectRatio])
 
   const [copySuccess, setCopySuccess] = useState(false)
+  // 이미지 버튼(카테고리/바로 보내기)과 같은 눌림 효과 — 실측 폭 기준 6px
+  // 축소 + 그림자. 테두리는 저 버튼들과 달리 디졸브로 없어지지 않고 항상
+  // 그대로 있는다(border는 iconBtnStyle에서 고정값).
+  const copyBtnRef = useRef<HTMLButtonElement>(null)
+  const [isCopyPressed, setIsCopyPressed] = useState(false)
+  const [copyPressScale, setCopyPressScale] = useState(1)
+  const handleCopyPressStart = () => {
+    if (!refined) return
+    const size = copyBtnRef.current?.offsetWidth ?? 0
+    setCopyPressScale(size > 0 ? (size - 6) / size : 1)
+    setIsCopyPressed(true)
+  }
+  const handleCopyPressEnd = () => setIsCopyPressed(false)
 
   const handleCopy = () => {
     navigator.clipboard
       .writeText(refined)
       .then(() => {
         setCopySuccess(true)
-        setTimeout(() => setCopySuccess(false), 2000)
+        setTimeout(() => setCopySuccess(false), 700)
       })
       .catch(() => {})
   }
@@ -381,7 +409,20 @@ export function SidePanelApp() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#666" }}>완성된 프롬프트</div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <button onClick={handleCopy} disabled={!refined} style={iconBtnStyle(!refined, copySuccess)} title="프롬프트 복사">
+                <button
+                  ref={copyBtnRef}
+                  onClick={handleCopy}
+                  onMouseDown={handleCopyPressStart}
+                  onMouseUp={handleCopyPressEnd}
+                  onMouseLeave={handleCopyPressEnd}
+                  disabled={!refined}
+                  style={{
+                    ...iconBtnStyle(!refined, copySuccess),
+                    transform: `scale(${isCopyPressed ? copyPressScale : 1})`,
+                    boxShadow: isCopyPressed ? "0 3px 10px rgba(0, 0, 0, 0.35)" : "0 0 0 rgba(0, 0, 0, 0)",
+                  }}
+                  title="프롬프트 복사"
+                >
                   {copySuccess ? <CheckIcon /> : <CopyIcon />}
                 </button>
               </div>
@@ -398,7 +439,11 @@ export function SidePanelApp() {
                 color: INK,
               }}
             >
-              {refined || <span style={{ color: "#aaa" }}>완성된 프롬프트가 여기에 표시돼요</span>}
+              {refined || (
+                <span style={{ color: "#aaa" }}>
+                  {needsAspectRatio ? "가로세로비율을 선택해주세요." : "완성된 프롬프트가 여기에 표시돼요"}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -490,18 +535,18 @@ function statusStyle(color: string): CSSProperties {
 
 function iconBtnStyle(disabled: boolean, active = false): CSSProperties {
   return {
-    background: active ? LIME : "#fff",
-    color: disabled ? "#999" : INK,
+    background: active ? "#202020" : "#fff", // 복사 성공 시 초록(LIME) 대신 진한 회색
+    color: active ? "#fff" : disabled ? "#999" : INK, // 배경이 어두워지는 만큼 체크 아이콘은 흰색으로
     padding: "5px 8px",
     borderRadius: 6,
-    border: `1.5px solid ${INK}`,
+    border: `1.5px solid ${INK}`, // 이미지 버튼과 달리 눌림과 무관하게 항상 테두리 유지
     cursor: disabled ? "default" : "pointer",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     lineHeight: 1,
     opacity: disabled ? 0.5 : 1,
-    transition: "background 0.2s ease",
+    transition: "background 0.2s ease, color 0.2s ease, transform 150ms ease, box-shadow 150ms ease",
   }
 }
 

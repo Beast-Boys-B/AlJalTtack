@@ -9,7 +9,7 @@ import type { Category, FixedRule } from "./types"
 // 텍스트에서 키워드로 감지하지 않는 유일한 축(항상 사용자가 세부 조정에서
 // 직접 클릭). 그래서 이 배열은 detectAxes에서 전혀 참조되지 않는다 — 참조하는
 // 순간 자동감지가 생기는 셈이라 의도적으로 분리해 둔다.
-const ASPECT_RATIO_OPTIONS = ["와이드스크린(16:9)", "가로(4:3)", "정사각형(1:1)", "기본(3:4)"] as const
+const ASPECT_RATIO_OPTIONS = ["기본(3:4)", "와이드스크린(16:9)", "가로(4:3)", "정사각형(1:1)"] as const
 
 export const category: Category = {
   id: "photo",
@@ -225,13 +225,22 @@ export function detectAxes(text: string): Record<string, string> {
 // 태그가 항상 이 순서로 조립된다. 조립 형식도 다른 4개 카테고리(역할지정형
 // 문장)와 달리 "[사용자 원문], tag1, tag2, tag3, tag4" 형태다.
 export function generatePrompt(text: string, axes: Record<string, string>): string {
-  // 축1 — 가로세로비율은 자동감지가 없으므로 axes에 담긴 사용자 선택값을
-  // 그대로 쓴다. 값이 없거나 옵션 목록에 없는 값이면(예: 초기 로드 시 축
-  // 상태가 아직 채워지지 않은 경우) prd 기본값인 1번째 옵션으로 폴백한다.
+  // 축1 — 가로세로비율은 자동감지가 없고(prd 축1), "기본값 없음"이 명시적
+  // 규칙이다. 다른 3개 축과 달리 감지 실패 시 1번째 옵션으로 자동 채워지는
+  // 게 아니라, 사용자가 직접 고르기 전까지는 완성된 프롬프트 자체를 만들지
+  // 않는 것이 스키마상 올바른 동작이다(prd: "이 축에 값이 선택되기 전까지는
+  // 완성된 프롬프트 자체를 만들지 않는다"). 스키마는 호출부(App.tsx 등)가
+  // 이 축에 실제 사용자 선택값이 있을 때만 generatePrompt를 호출해야 한다고
+  // 명시하므로("애초에 기본값으로 삼을 값이 없기 때문"), 여기서 1번째
+  // 옵션으로 조용히 폴백하는 것은 스키마 위반이다 — 대신 잘못된(또는 너무
+  // 이른) 호출을 침묵 속에 묻지 않도록 명시적으로 에러를 던진다.
   const manualAspectRatio = axes["aspectRatio"]
-  const aspectRatio: string = (ASPECT_RATIO_OPTIONS as readonly string[]).includes(manualAspectRatio)
-    ? manualAspectRatio
-    : ASPECT_RATIO_OPTIONS[0]
+  if (!(ASPECT_RATIO_OPTIONS as readonly string[]).includes(manualAspectRatio)) {
+    throw new Error(
+      "generatePrompt(photo): aspectRatio가 아직 선택되지 않았습니다 — 이 축은 기본값이 없으므로(prd/AI사진생성.md 축1) 호출부는 사용자가 값을 직접 고른 뒤에만 이 함수를 호출해야 합니다.",
+    )
+  }
+  const aspectRatio: string = manualAspectRatio
 
   const manualStyle = axes["style"]
   const style: "left" | "right" =
