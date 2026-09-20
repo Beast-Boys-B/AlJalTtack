@@ -5,6 +5,12 @@
 
 import type { Category, FixedRule } from "./types"
 
+// prd/AI사진생성.md > 축 1 — 가로세로비율: 표시 순서 그대로 4지선다, 원문
+// 텍스트에서 키워드로 감지하지 않는 유일한 축(항상 사용자가 세부 조정에서
+// 직접 클릭). 그래서 이 배열은 detectAxes에서 전혀 참조되지 않는다 — 참조하는
+// 순간 자동감지가 생기는 셈이라 의도적으로 분리해 둔다.
+const ASPECT_RATIO_OPTIONS = ["와이드스크린(16:9)", "가로(4:3)", "정사각형(1:1)", "기본(3:4)"] as const
+
 export const category: Category = {
   id: "photo",
   name: "AI사진생성",
@@ -14,6 +20,12 @@ export const category: Category = {
   placeholder: "파란 하늘 아래 카페에 앉아 있는 고양이를 그려줘",
   example: "노을 지는 바닷가에서 산책하는 사람의 실루엣",
   axes: [
+    {
+      id: "aspectRatio",
+      label: "가로세로비율",
+      options: [...ASPECT_RATIO_OPTIONS],
+      hint: "이 축은 원문에서 자동으로 감지되지 않아요 — 항상 직접 클릭해서 골라야 해요.",
+    },
     {
       id: "style",
       label: "스타일",
@@ -208,11 +220,19 @@ export function detectAxes(text: string): Record<string, string> {
   }
 }
 
-// prd/AI사진생성.md > 태그 조립 원칙: 각 축(스타일/피사체/구도)에서 감지된
-// 신호 1개씩만 태그로 변환되므로, 결과는 항상 정확히 3개의 키워드로
-// 고정된다. 조립 형식도 다른 4개 카테고리(역할지정형 문장)와 달리
-// "[사용자 원문], tag1, tag2, tag3" 형태다.
+// prd/AI사진생성.md > 태그 조립 원칙: 가로세로비율(사용자 선택값) 1개 +
+// 스타일/피사체/구도 각 축에서 감지된(또는 기본값) 신호 1개씩, 총 4개의
+// 태그가 항상 이 순서로 조립된다. 조립 형식도 다른 4개 카테고리(역할지정형
+// 문장)와 달리 "[사용자 원문], tag1, tag2, tag3, tag4" 형태다.
 export function generatePrompt(text: string, axes: Record<string, string>): string {
+  // 축1 — 가로세로비율은 자동감지가 없으므로 axes에 담긴 사용자 선택값을
+  // 그대로 쓴다. 값이 없거나 옵션 목록에 없는 값이면(예: 초기 로드 시 축
+  // 상태가 아직 채워지지 않은 경우) prd 기본값인 1번째 옵션으로 폴백한다.
+  const manualAspectRatio = axes["aspectRatio"]
+  const aspectRatio: string = (ASPECT_RATIO_OPTIONS as readonly string[]).includes(manualAspectRatio)
+    ? manualAspectRatio
+    : ASPECT_RATIO_OPTIONS[0]
+
   const manualStyle = axes["style"]
   const style: "left" | "right" =
     manualStyle === STYLE_LABEL.right ? "right" : manualStyle === STYLE_LABEL.left ? "left" : detectStyle(text)
@@ -239,7 +259,7 @@ export function generatePrompt(text: string, axes: Record<string, string>): stri
   // 축 옵션 라벨 텍스트(예: "사진 같은 현실적")를 태그로 사용한다 — 스키마에
   // 없는 영문 키워드 매핑을 임의로 지어내지 않기 위함이다. 이미지 생성 AI에
   // 더 적합한 구체적 태그 문구가 정해지면 이 매핑만 교체하면 된다.
-  const tags = [STYLE_LABEL[style], SUBJECT_LABEL[subject], FRAMING_LABEL[framing]]
+  const tags = [aspectRatio, STYLE_LABEL[style], SUBJECT_LABEL[subject], FRAMING_LABEL[framing]]
 
   return `${text}, ${tags.join(", ")}`
 }
