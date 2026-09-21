@@ -128,7 +128,7 @@ function lastSignalIndex(text: string, nounRoots: string[], compoundPhrases: str
 // 신호를 우선 채택. 기본값: 좌(사진 같은 현실적).
 // ---------------------------------------------------------------------------
 
-const STYLE_LEFT_NOUN = ["사진", "현실적", "포토리얼", "실제", "진짜", "사실적"]
+const STYLE_LEFT_NOUN = ["사진", "현실적", "포토리얼", "실제", "사실적"]
 const STYLE_LEFT_COMPOUND = ["3D 렌더링"]
 const STYLE_RIGHT_NOUN = [
   "일러스트",
@@ -161,8 +161,16 @@ function detectStyle(text: string): "left" | "right" {
 // 등장한 신호를 우선 채택. 기본값: 좌(인물 중심).
 // ---------------------------------------------------------------------------
 
-const SUBJECT_LEFT_NOUN = ["사람", "인물", "초상화", "모델"]
-const SUBJECT_LEFT_COMPOUND = ["인물 사진", "사람 사진", "여성 인물", "남성 인물", "인물 포즈"]
+const SUBJECT_LEFT_NOUN = ["사람", "인물", "초상화"]
+const SUBJECT_LEFT_COMPOUND = [
+  "인물 사진",
+  "사람 사진",
+  "여성 인물",
+  "남성 인물",
+  "인물 포즈",
+  "패션모델",
+  "모델 사진",
+]
 const SUBJECT_RIGHT_NOUN = [
   "풍경",
   "자연",
@@ -177,6 +185,21 @@ const SUBJECT_RIGHT_NOUN = [
   "도시",
   "음식",
 ]
+// prd/AI사진생성.md > 축3 매칭 참고: "자연"은 명사 어근으로 매칭하되,
+// "자연스럽-"으로 이어지는 활용형(자연스럽게/자연스러운 등)은 우 신호에서
+// 제외한다 — "사람이 자연스럽게 웃는 모습" 같은 문장이 인물 묘사임에도
+// "자연" 어근 매칭 때문에 우(인물 아님)로 오탐하는 문제를 막기 위함.
+function lastSubjectRightIndex(text: string): number {
+  let last = -1
+  for (const m of text.matchAll(/\S+/g)) {
+    const word = m[0]
+    if (word.startsWith("자연스럽")) continue
+    if (SUBJECT_RIGHT_NOUN.some((root) => word.startsWith(root)) && m.index! > last) {
+      last = m.index!
+    }
+  }
+  return last
+}
 
 const SUBJECT_LABEL = {
   left: "인물 중심",
@@ -185,7 +208,7 @@ const SUBJECT_LABEL = {
 
 function detectSubject(text: string): "left" | "right" {
   const leftIdx = lastSignalIndex(text, SUBJECT_LEFT_NOUN, SUBJECT_LEFT_COMPOUND)
-  const rightIdx = lastSignalIndex(text, SUBJECT_RIGHT_NOUN)
+  const rightIdx = lastSubjectRightIndex(text)
   if (leftIdx === -1 && rightIdx === -1) return "left" // 기본값: 좌
   return rightIdx > leftIdx ? "right" : "left"
 }
@@ -195,8 +218,8 @@ function detectSubject(text: string): "left" | "right" {
 // 등장한 신호를 우선 채택. 기본값: 우(광활한 뷰).
 // ---------------------------------------------------------------------------
 
-const FRAMING_LEFT_NOUN = ["클로즈업", "가까운", "확대", "세부", "근접", "헤드샷", "디테일"]
-const FRAMING_RIGHT_NOUN = ["멀리서", "광각", "전경", "넓게", "드넓은"]
+const FRAMING_LEFT_NOUN = ["클로즈업", "확대", "세부", "근접", "헤드샷", "디테일"]
+const FRAMING_RIGHT_NOUN = ["멀리서", "광각", "전경", "넓게", "드넓은", "광활"]
 const FRAMING_RIGHT_COMPOUND = ["전체 샷", "배경 포함", "와이드 샷"]
 
 const FRAMING_LABEL = {

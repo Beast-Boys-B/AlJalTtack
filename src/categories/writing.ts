@@ -185,8 +185,26 @@ const TARGET_LABEL = {
   right: "동료/팀원",
 } as const
 
+// "과장"은 좌신호(직급 "과장님")이지만, 동사 "과장하다"(exaggerate)의 활용형
+// (과장하/과장해/과장했/과장할...)도 startsWith("과장")에 걸려 false-positive가
+// 나므로 그 활용형만 제외한다. 그 외 TARGET_LEFT_NOUN 어근은 기존 lastNounRootIndex
+// 그대로 사용한다.
+function lastTargetLeftNounIndex(text: string): number {
+  let last = -1
+  for (const m of text.matchAll(/\S+/g)) {
+    const word = m[0]
+    for (const root of TARGET_LEFT_NOUN) {
+      if (!word.startsWith(root)) continue
+      if (root === "과장" && /^과장(하|해|했|할)/.test(word)) continue
+      if (m.index! > last) last = m.index!
+      break
+    }
+  }
+  return last
+}
+
 function detectTarget(text: string): "left" | "right" {
-  const leftIdx = lastNounRootIndex(text, TARGET_LEFT_NOUN)
+  const leftIdx = lastTargetLeftNounIndex(text)
   const rightIdx = Math.max(
     lastNounRootIndex(text, TARGET_RIGHT_NOUN),
     lastLiteralIndex(text, TARGET_RIGHT_COMPOUND),
@@ -200,14 +218,14 @@ function detectTarget(text: string): "left" | "right" {
 // 신호를 우선 채택한다.
 // ---------------------------------------------------------------------------
 
+// 강신호(명시적 매체/형식 명사) — 우 신호와의 위치 비교("더 나중에 등장한
+// 신호 우선")에 그대로 쓰인다.
 const DOC_LEFT_NOUN = [
   "이메일",
   "메시지",
   "메신저",
   "카톡",
   "슬랙",
-  "빠르게",
-  "간단히",
   "에세이",
   "수필",
   "SNS",
@@ -215,6 +233,12 @@ const DOC_LEFT_NOUN = [
   "게시글",
 ]
 const DOC_LEFT_COMPOUND = ["한두 줄"]
+// 약신호(완성 속도를 뜻하는 범용 부사) — 문서 형식을 직접 가리키지 않으므로
+// 우 신호가 하나라도 있으면 위치 비교에서 완전히 제외한다(prd/작성.md 축3 예외
+// 참고, 여행계획 축3과 동일한 "위치 비교 원칙의 예외" 패턴). 우 신호가 전혀
+// 없을 때만 좌 신호로 인정되지만, 그 경우도 기본값이 이미 좌라 결과에 영향은
+// 없다.
+const DOC_LEFT_WEAK = ["빠르게", "간단히"]
 const DOC_RIGHT_NOUN = [
   "회의록",
   "보고서",
@@ -234,13 +258,18 @@ const DOC_LABEL = {
 } as const
 
 function detectDocType(text: string): "left" | "right" {
-  const leftIdx = Math.max(
+  const rightIdx = lastNounRootIndex(text, DOC_RIGHT_NOUN)
+  const strongLeftIdx = Math.max(
     lastNounRootIndex(text, DOC_LEFT_NOUN),
     lastLiteralIndex(text, DOC_LEFT_COMPOUND),
   )
-  const rightIdx = lastNounRootIndex(text, DOC_RIGHT_NOUN)
-  if (leftIdx === -1 && rightIdx === -1) return "left" // 기본값: 좌
-  return rightIdx > leftIdx ? "right" : "left"
+  if (rightIdx === -1) {
+    // 우 신호가 전혀 없을 때만 약신호(빠르게/간단히)도 좌 신호로 인정한다 —
+    // 다만 기본값이 이미 좌이므로 결과는 항상 "left"로 동일하다.
+    return "left"
+  }
+  // 우 신호가 하나라도 있으면 약신호는 완전히 무시하고 강신호만으로 비교한다.
+  return rightIdx > strongLeftIdx ? "right" : "left"
 }
 
 // 자동 감지 — 페이지2 진입 시 이 결과로 축 버튼 초기 상태를 채운다(ComparePage에서 호출).
