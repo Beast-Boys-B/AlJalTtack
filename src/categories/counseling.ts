@@ -100,6 +100,11 @@ interface Axis1Def {
   roots: string[]
   // 구문형 키워드는 문장 그대로(substring) 매칭
   phrases: string[]
+  // 특정 어근이 이 축과 무관한 다른 뜻으로도 흔히 쓰여 오탐 가능성이 있을 때
+  // (예: "환승"=연애 은어 vs 지하철 환승, "손절"=인간관계 vs 주식 손절) 쓴다.
+  // 매칭된 어근이 이 맵에 있고, 원문 전체에 연결된 배제 단어가 하나라도
+  // 있으면 그 매칭은 무시한다.
+  ambiguousRootExclusions?: Record<string, string[]>
 }
 
 const AXIS1_DEFS: Record<Axis1Topic, Axis1Def> = {
@@ -107,30 +112,69 @@ const AXIS1_DEFS: Record<Axis1Topic, Axis1Def> = {
     personaLabel: "연애고수 모드",
     effect:
       "반말체를 사용하고 비속어·은어는 쓰지 마세요. 연애 경험이 많고 트렌드에 밝은 친구처럼 밀당, 심리전, 이별 회복 등을 짚어주세요. 가벼운 유머는 사용해도 좋습니다.",
-    // "헤어지"는 "헤어졌어/헤어졌는데"처럼 불규칙 활용(지+었→졌)이 붙으면
-    // 원형 어근 startsWith로는 못 잡아서, 두 글자로 줄인 "헤어"를 어근으로 쓴다.
+    // "헤어지"만 어근으로 쓰면 "헤어졌어/헤어졌는데"처럼 불규칙 활용(지+었→졌)을
+    // 못 잡는다. 그렇다고 "헤어" 두 글자로 줄이면 "헤어스타일"까지 걸린다(오탐
+    // 리포트로 확인됨) — 그래서 자주 쓰이는 활용형을 각각 어근으로 나열한다.
     roots: [
       "남자친구",
       "여자친구",
       "연인",
       "썸",
+      "썸남",
+      "썸녀",
       "이별",
-      "헤어",
+      "헤어지",
+      "헤어져",
+      "헤어졌",
+      "헤어질",
       "짝사랑",
+      "짝남",
+      "짝녀",
       "연애",
       "소개팅",
       "권태기",
       "양다리",
       "환승",
+      "남친",
+      "여친",
+      "고백",
+      "차였",
+      "모쏠",
+      "모솔",
+      "바람피",
     ],
-    phrases: [],
+    phrases: ["장거리 연애"],
+    // "환승연애/환승했어"(양다리성 이별) vs "지하철 환승"처럼 문자 그대로 쓰이는
+    // 경우가 섞일 수 있어, 교통 관련 단어가 같은 텍스트에 있으면 "환승" 매칭을
+    // 무시한다.
+    ambiguousRootExclusions: {
+      환승: ["지하철", "버스", "환승역", "환승 통로", "환승할인", "환승 게이트"],
+    },
   },
   인간관계: {
     personaLabel: "친구 상담 모드",
     effect:
       "반말체를 사용하고 비속어·은어는 쓰지 마세요. 또래 친구처럼 상황을 먼저 정리해주고 공감해주세요.",
-    roots: ["친구", "동료", "손절", "뒷담화", "왕따", "인간관계", "절교"],
+    roots: [
+      "친구",
+      "동료",
+      "손절",
+      "뒷담화",
+      "뒷말",
+      "왕따",
+      "따돌림",
+      "은따",
+      "인간관계",
+      "절교",
+      "다퉜",
+      "싸웠",
+    ],
     phrases: ["거리를 두고 싶어", "관계가 불편해"],
+    // "친구 손절" vs "주식/코인 손절"처럼 투자 문맥과 겹칠 수 있어, 관련 단어가
+    // 같은 텍스트에 있으면 "손절" 매칭을 무시한다.
+    ambiguousRootExclusions: {
+      손절: ["주식", "코인", "종목", "손절매", "매수", "매도", "수익률"],
+    },
   },
   학업: {
     personaLabel: "친한 선생님 모드",
@@ -147,6 +191,13 @@ const AXIS1_DEFS: Record<Axis1Topic, Axis1Def> = {
       "학점",
       "등수",
       "벼락치기",
+      "재수",
+      "내신",
+      "논술",
+      "학사경고",
+      "조모임",
+      "레포트",
+      "학원",
     ],
     phrases: [],
   },
@@ -163,10 +214,17 @@ const AXIS1_DEFS: Record<Axis1Topic, Axis1Def> = {
       "퇴사",
       "스펙",
       "자소서",
+      "이력서",
       "인턴",
       "진학",
       "전공",
       "적성",
+      "취준",
+      "구직",
+      "공채",
+      "탈락",
+      "포트폴리오",
+      "창업",
     ],
     phrases: [],
   },
@@ -176,14 +234,42 @@ const AXIS1_DEFS: Record<Axis1Topic, Axis1Def> = {
       "친근한 존댓말을 사용하세요. 양쪽 입장도 짚어주되 사용자 편에서 균형 잡힌 조언을 해주세요.",
     // "형"은 "형식/형편"과 겹칠 수 있음(prd 명시 주의사항) — 실제 대화에서
     // 드문 케이스라 표에 있는 그대로 둔다.
-    roots: ["엄마", "아빠", "부모님", "형", "오빠", "언니", "누나", "동생", "가족", "집안"],
+    roots: [
+      "엄마",
+      "아빠",
+      "부모님",
+      "형",
+      "오빠",
+      "언니",
+      "누나",
+      "동생",
+      "가족",
+      "집안",
+      "할머니",
+      "할아버지",
+      "시댁",
+      "처가",
+      "이혼",
+    ],
     phrases: [],
   },
   자존감: {
     personaLabel: "부모님 모드",
     effect:
       "편안하고 다정한 말투를 사용하세요. 조건 없이 존재 자체를 인정하는 지지적인 화법을 사용하세요.",
-    roots: ["자존감", "자신감", "열등감", "자기혐오", "무기력", "자책"],
+    roots: [
+      "자존감",
+      "자신감",
+      "열등감",
+      "자기혐오",
+      "무기력",
+      "자책",
+      "위축",
+      "패배감",
+      "무가치",
+      "자기비하",
+      "비교당해",
+    ],
     phrases: ["나 자신", "내가 부족한 것 같아"],
   },
 }
@@ -211,9 +297,11 @@ function findAxis1Matches(
 ): number[] {
   const indices: number[] = []
   for (const { token, index } of tokens) {
-    if (def.roots.some((root) => token.startsWith(root))) {
-      indices.push(index)
-    }
+    const matchedRoot = def.roots.find((root) => token.startsWith(root))
+    if (!matchedRoot) continue
+    const exclusions = def.ambiguousRootExclusions?.[matchedRoot]
+    if (exclusions?.some((word) => text.includes(word))) continue
+    indices.push(index)
   }
   for (const phrase of def.phrases) {
     let idx = text.indexOf(phrase)
@@ -286,7 +374,15 @@ const AGE_WEIGHTS: Record<AgeGroup, Record<Axis1Topic, number>> = {
   "50대이상": { 연애: 0, 인간관계: 1, 학업: 0, 진로: 0, 가족: 2, 자존감: 3 },
 }
 
-function detectAxis1(text: string): Axis1Topic {
+// 빈 문자열은 "진짜 동점이라 자동으로 단정하지 않음"을 뜻한다 — 호출부인
+// detectAxes()가 이 값을 그대로 topic으로 반환하면, ComparePage의 초기화 로직
+// (`detected[a.id] ?? (a.noDefault ? "" : a.options[0])`)은 ??만 보므로 ""는
+// 그대로 통과해 축1 버튼이 미선택 상태로 남는다(사용자가 직접 고르기 전까지).
+// prd 문구인 "사용자에게 되묻는다"(확인 질문 팝업)까지는 아니고 — 그건
+// ComparePage.tsx/types.ts 같은 공용 파일 변경이 필요해 이 파일 범위를
+// 벗어난다. 대신 최소한 "확신 없이 하나를 몰래 찍어서 보여주지는 않는다"는
+// prd의 핵심 취지는 지킨다.
+function detectAxis1(text: string): Axis1Topic | "" {
   const tokens = tokenize(text)
   const detected = new Map<Axis1Topic, { base: number; recency: boolean; lastIndex: number }>()
   const [lastStart, lastEnd] = getLastSentenceRange(text)
@@ -305,7 +401,8 @@ function detectAxis1(text: string): Axis1Topic {
 
   const age = detectAgeGroup(text)
 
-  // 연령대 신호가 없으면 2~5단계(점수 계산) 없이 바로 "나중에 등장한 신호 우선"만 적용
+  // 연령대 신호가 없으면 2~5단계(점수 계산) 없이 바로 "나중에 등장한 신호 우선"만 적용.
+  // 서로 다른 매칭은 텍스트 위치(lastIndex)가 항상 달라 여기서는 동점이 나지 않는다.
   if (!age) {
     let best: Axis1Topic = AXIS1_DEFAULT
     let bestIndex = -1
@@ -322,16 +419,22 @@ function detectAxis1(text: string): Axis1Topic {
     topic,
     total: s.base + (s.recency ? 2 : 0) + AGE_WEIGHTS[age][topic],
     recency: s.recency,
-    lastIndex: s.lastIndex,
   }))
 
-  ranked.sort((a, b) => {
-    if (b.total !== a.total) return b.total - a.total
-    if (a.recency !== b.recency) return (b.recency ? 1 : 0) - (a.recency ? 1 : 0)
-    return b.lastIndex - a.lastIndex
-  })
+  // prd의 우선순위 계산(연령대·최근성·가중치)은 total과 recency까지다. 이 두
+  // 단계를 다 거치고도 후보가 둘 이상 남으면 그게 prd가 말하는 "동점" —
+  // 예전 코드는 여기서 텍스트 위치(lastIndex)로 한 번 더 갈라서 항상 하나를
+  // 찍었는데, 그러면 "되묻는다"가 실행될 일이 영원히 없었다. 이제는 그 지점에서
+  // 멈추고 미확정("")을 반환한다.
+  const maxTotal = Math.max(...ranked.map((r) => r.total))
+  const topByTotal = ranked.filter((r) => r.total === maxTotal)
+  if (topByTotal.length === 1) return topByTotal[0].topic
 
-  return ranked[0].topic
+  const recentOnes = topByTotal.filter((r) => r.recency)
+  const finalists = recentOnes.length > 0 ? recentOnes : topByTotal
+  if (finalists.length === 1) return finalists[0].topic
+
+  return ""
 }
 
 // ---------------------------------------------------------------------------
@@ -478,7 +581,9 @@ function detectAxis3(text: string): Axis3Mode {
 }
 
 // 자동 감지 — 페이지2 진입 시 이 결과로 축 버튼 초기 상태를 채운다(ComparePage에서 호출).
-// 반환값은 category.axes[].options에 있는 라벨 문자열 그대로다.
+// 반환값은 category.axes[].options에 있는 라벨 문자열 그대로다. 다만 topic은
+// detectAxis1이 진짜 동점을 만나면 ""을 줄 수 있다 — 이 경우 축1 버튼은
+// 미선택 상태로 남는다(위 detectAxis1 주석 참고).
 export function detectAxes(text: string): Record<string, string> {
   const topic = detectAxis1(text)
   const style = detectAxis2(text)
