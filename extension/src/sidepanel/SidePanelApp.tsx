@@ -140,17 +140,21 @@ function buildInitialAxes(text: string, category: (typeof CATEGORIES)[number]) {
   return init
 }
 
-// 완성된 프롬프트/세부 조정이 슬라이드+디졸브로 열리는 동안, 매 프레임 맨
-// 아래(document.documentElement.scrollHeight)로 스크롤 위치를 다시 맞춘다.
-// 늘어나는 도중의 높이를 프레임마다 그대로 쫓아가므로, 딱 한 번 스크롤하고
-// 기다렸다가 다 열린 뒤에야 점프하는 것과 달리 펼쳐지자마자 바로 같이
-// 내려가기 시작해서 "먼저 스크롤 내려가고 뜨는" 느낌을 준다. durationMs는
-// 이 카테고리/축이 다 펼쳐지는 데 걸리는 시간(트랜지션 시간)과 맞춘다.
-function chaseScrollToBottom(durationMs: number) {
+// 완성된 프롬프트/세부 조정이 슬라이드+디졸브로 열리는 동안, 매 프레임 스크롤
+// 위치를 다시 맞춘다. 예전엔 맨 아래(scrollHeight)까지 쫓아갔는데, 그러면
+// 한창 자연어를 입력 중인 textarea가 화면 위로 밀려 사라져버려 타이핑 중에
+// 불편했다 — 그래서 자연어 입력 칸(capEl) 윗부분이 화면 위쪽에 오는 지점까지만
+// 내려가고 더는 안 내려간다(늘어나는 완성된 프롬프트/축 칸은 그 아래로 화면
+// 밖에 쌓이고, 사용자가 원하면 직접 스크롤해서 본다). durationMs는 이
+// 카테고리/축이 다 펼쳐지는 데 걸리는 시간(트랜지션 시간)과 맞춘다.
+function chaseScrollToInputTop(capEl: HTMLElement | null, durationMs: number) {
   const start = performance.now()
   let frameId = 0
   const tick = (now: number) => {
-    window.scrollTo({ top: document.documentElement.scrollHeight })
+    const target = capEl
+      ? Math.max(0, capEl.getBoundingClientRect().top + window.scrollY - 16)
+      : document.documentElement.scrollHeight
+    window.scrollTo({ top: target })
     if (now - start < durationMs) frameId = requestAnimationFrame(tick)
   }
   frameId = requestAnimationFrame(tick)
@@ -174,6 +178,9 @@ export function SidePanelApp() {
   // 전환 도중 다른 카테고리를 또 눌렀을 때, 먼저 걸어둔 setTimeout이 뒤늦게
   // 실행되며 최신 선택을 덮어쓰지 않도록 막는 용도.
   const latestCategoryIdRef = useRef<CategoryId | null>(null)
+  // 자연어 입력 칸(라벨+textarea) 감싸는 div — 스크롤이 이 위치까지만
+  // 내려가게 캡을 걸 때 기준점으로 쓴다(chaseScrollToInputTop).
+  const naturalLangSectionRef = useRef<HTMLDivElement>(null)
   // 대상별로 독립적인 상태 — 하나 실패해도 다른 대상 버튼 상태에
   // 영향 없게 target.id로 키를 나눈다.
   const [sendStatus, setSendStatus] = useState<Record<string, SendStatus | undefined>>({})
@@ -202,7 +209,7 @@ export function SidePanelApp() {
       setAxesExpanded(hasText)
       // 이미 글을 써둔 상태에서 카테고리를 처음 고른 경우 — 축이 펼쳐지는
       // 동안 계속 맨 아래를 쫓아간다.
-      if (hasText) chaseScrollToBottom(AXES_TRANSITION_MS)
+      if (hasText) chaseScrollToInputTop(naturalLangSectionRef.current, AXES_TRANSITION_MS)
     } else {
       // 다른 카테고리가 이미 선택돼 있던 상태 — 빠르게 접었다가, 다 접힌 뒤에
       // 새 카테고리 축으로 바꿔서 다시 펼친다.
@@ -212,7 +219,7 @@ export function SidePanelApp() {
         setAxesPanelCategoryId(id)
         setAxesExpanded(hasText)
         // 새 축이 펼쳐지면서 칸 높이가 다시 늘어나는 동안 맨 아래를 쫓아간다.
-        if (hasText) chaseScrollToBottom(AXES_TRANSITION_MS)
+        if (hasText) chaseScrollToInputTop(naturalLangSectionRef.current, AXES_TRANSITION_MS)
       }, AXES_TRANSITION_MS)
     }
   }
@@ -231,7 +238,7 @@ export function SidePanelApp() {
     // 카테고리를 아직 안 골랐으면 완성된 프롬프트 칸만 나타나고 끝 —
     // 펼쳐지는 동안(AXES_TRANSITION_MS) 계속 맨 아래를 쫓아간다.
     if (!categoryId) {
-      return chaseScrollToBottom(AXES_TRANSITION_MS)
+      return chaseScrollToInputTop(naturalLangSectionRef.current, AXES_TRANSITION_MS)
     }
     const t = window.setTimeout(() => {
       setAxesPanelCategoryId(categoryId)
@@ -240,7 +247,7 @@ export function SidePanelApp() {
     // 완성된 프롬프트가 먼저 뜨고, 지연 후 축이 뒤이어 펼쳐진다 — 두 단계 모두
     // 합친 시간(지연 + 펼침) 동안 계속 맨 아래를 쫓아가서, 각 단계가 늘어날
     // 때마다 같이 내려간다.
-    const cancelChase = chaseScrollToBottom(AXES_TEXT_REVEAL_DELAY_MS + AXES_TRANSITION_MS)
+    const cancelChase = chaseScrollToInputTop(naturalLangSectionRef.current, AXES_TEXT_REVEAL_DELAY_MS + AXES_TRANSITION_MS)
     return () => {
       window.clearTimeout(t)
       cancelChase()
@@ -359,7 +366,7 @@ export function SidePanelApp() {
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <div ref={naturalLangSectionRef} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#888" }}>
           <span>하고 싶은 말을 편하게 적어주세요</span>
           <span>
