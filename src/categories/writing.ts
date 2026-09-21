@@ -130,9 +130,22 @@ function hasLiteral(text: string, phrases: string[]): boolean {
 // 반영한다(겹침 처리 규칙 대상이 아님).
 // ---------------------------------------------------------------------------
 
-const PURPOSE_LEFT_NOUN = ["보고", "전달", "공유", "완료", "결과", "현황", "공지"]
-const PURPOSE_LEFT_LITERAL = ["알려드립니다", "진행 상황"]
-const PURPOSE_RIGHT_NOUN = ["요청", "결재"]
+const PURPOSE_LEFT_NOUN = [
+  "보고",
+  "전달",
+  "공유",
+  "완료",
+  "결과",
+  "현황",
+  "공지",
+  "안내",
+  "통보",
+  "리포트",
+  "브리핑",
+  "업데이트",
+]
+const PURPOSE_LEFT_LITERAL = ["알려드립니다", "진행 상황", "말씀드립니다", "전해드립니다"]
+const PURPOSE_RIGHT_NOUN = ["요청", "결재", "부탁", "문의", "신청", "허가"]
 const PURPOSE_RIGHT_LITERAL = [
   "승인해 주세요",
   "검토 부탁",
@@ -140,6 +153,9 @@ const PURPOSE_RIGHT_LITERAL = [
   "해주실 수 있을까요",
   "도와주세요",
   "협조 부탁",
+  "허락해 주세요",
+  "가능할까요",
+  "확인해 주세요",
 ]
 
 interface DualSides {
@@ -176,17 +192,58 @@ const TARGET_LEFT_NOUN = [
   "고객",
   "클라이언트",
   "상사",
+  "부장",
+  "차장",
+  "국장",
+  "실장",
+  "회장",
+  // "대표"·"이사"는 각각 "대표적"(무관한 의미), "이사 가다"(동음이의어)와
+  // 충돌할 위험이 있어 바로 어근으로 쓰지 않고 존칭이 붙은 온전한 형태를
+  // 그대로 어근으로 등록해 충돌을 피한다(prd/작성.md 축2 매칭 참고).
+  "대표님",
+  "이사님",
+  "선배",
+  "협력업체",
+  "파트너사",
+  "바이어",
+  "담당자님",
 ]
-const TARGET_RIGHT_NOUN = ["팀원", "동료", "후배", "누나", "언니", "오빠"]
-const TARGET_RIGHT_COMPOUND = ["같은 팀", "우리 팀", "옆 부서", "같은 직급"]
+const TARGET_RIGHT_NOUN = ["팀원", "동료", "후배", "누나", "언니", "오빠", "동생", "막내", "친구"]
+const TARGET_RIGHT_COMPOUND = [
+  "같은 팀",
+  "우리 팀",
+  "옆 부서",
+  "같은 직급",
+  "입사 동기",
+  "같은 부서",
+  "같은 연차",
+]
 
 const TARGET_LABEL = {
   left: "상급자/외부인",
   right: "동료/팀원",
 } as const
 
+// "과장"은 좌신호(직급 "과장님")이지만, 동사 "과장하다"(exaggerate)의 활용형
+// (과장하/과장해/과장했/과장할...)도 startsWith("과장")에 걸려 false-positive가
+// 나므로 그 활용형만 제외한다. 그 외 TARGET_LEFT_NOUN 어근은 기존 lastNounRootIndex
+// 그대로 사용한다.
+function lastTargetLeftNounIndex(text: string): number {
+  let last = -1
+  for (const m of text.matchAll(/\S+/g)) {
+    const word = m[0]
+    for (const root of TARGET_LEFT_NOUN) {
+      if (!word.startsWith(root)) continue
+      if (root === "과장" && /^과장(하|해|했|할)/.test(word)) continue
+      if (m.index! > last) last = m.index!
+      break
+    }
+  }
+  return last
+}
+
 function detectTarget(text: string): "left" | "right" {
-  const leftIdx = lastNounRootIndex(text, TARGET_LEFT_NOUN)
+  const leftIdx = lastTargetLeftNounIndex(text)
   const rightIdx = Math.max(
     lastNounRootIndex(text, TARGET_RIGHT_NOUN),
     lastLiteralIndex(text, TARGET_RIGHT_COMPOUND),
@@ -200,21 +257,35 @@ function detectTarget(text: string): "left" | "right" {
 // 신호를 우선 채택한다.
 // ---------------------------------------------------------------------------
 
+// 강신호(명시적 매체/형식 명사) — 우 신호와의 위치 비교("더 나중에 등장한
+// 신호 우선")에 그대로 쓰인다.
 const DOC_LEFT_NOUN = [
   "이메일",
   "메시지",
   "메신저",
   "카톡",
   "슬랙",
-  "빠르게",
-  "간단히",
   "에세이",
   "수필",
   "SNS",
   "인스타그램",
   "게시글",
+  "메일",
+  "문자",
+  "블로그",
+  "디엠",
+  "DM",
+  "페이스북",
+  "틱톡",
+  "쪽지",
 ]
-const DOC_LEFT_COMPOUND = ["한두 줄"]
+const DOC_LEFT_COMPOUND = ["한두 줄", "몇 줄"]
+// 약신호(완성 속도를 뜻하는 범용 부사) — 문서 형식을 직접 가리키지 않으므로
+// 우 신호가 하나라도 있으면 위치 비교에서 완전히 제외한다(prd/작성.md 축3 예외
+// 참고, 여행계획 축3과 동일한 "위치 비교 원칙의 예외" 패턴). 우 신호가 전혀
+// 없을 때만 좌 신호로 인정되지만, 그 경우도 기본값이 이미 좌라 결과에 영향은
+// 없다.
+const DOC_LEFT_WEAK = ["빠르게", "간단히"]
 const DOC_RIGHT_NOUN = [
   "회의록",
   "보고서",
@@ -226,6 +297,17 @@ const DOC_RIGHT_NOUN = [
   "상세",
   "첨부",
   "자기소개서",
+  "품의서",
+  "기안서",
+  "계획서",
+  "보도자료",
+  "매뉴얼",
+  "지침서",
+  "발표자료",
+  "프레젠테이션",
+  "계약서",
+  "규정",
+  "PPT",
 ]
 
 const DOC_LABEL = {
@@ -234,13 +316,18 @@ const DOC_LABEL = {
 } as const
 
 function detectDocType(text: string): "left" | "right" {
-  const leftIdx = Math.max(
+  const rightIdx = lastNounRootIndex(text, DOC_RIGHT_NOUN)
+  const strongLeftIdx = Math.max(
     lastNounRootIndex(text, DOC_LEFT_NOUN),
     lastLiteralIndex(text, DOC_LEFT_COMPOUND),
   )
-  const rightIdx = lastNounRootIndex(text, DOC_RIGHT_NOUN)
-  if (leftIdx === -1 && rightIdx === -1) return "left" // 기본값: 좌
-  return rightIdx > leftIdx ? "right" : "left"
+  if (rightIdx === -1) {
+    // 우 신호가 전혀 없을 때만 약신호(빠르게/간단히)도 좌 신호로 인정한다 —
+    // 다만 기본값이 이미 좌이므로 결과는 항상 "left"로 동일하다.
+    return "left"
+  }
+  // 우 신호가 하나라도 있으면 약신호는 완전히 무시하고 강신호만으로 비교한다.
+  return rightIdx > strongLeftIdx ? "right" : "left"
 }
 
 // 자동 감지 — 페이지2 진입 시 이 결과로 축 버튼 초기 상태를 채운다(ComparePage에서 호출).
