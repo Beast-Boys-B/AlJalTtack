@@ -25,6 +25,7 @@ export const category: Category = {
       label: "가로세로비율",
       options: [...ASPECT_RATIO_OPTIONS],
       hint: "이 축은 원문에서 자동으로 감지되지 않아요 — 항상 직접 클릭해서 골라야 해요.",
+      noDefault: true,
     },
     {
       id: "style",

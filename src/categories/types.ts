@@ -13,6 +13,11 @@ export interface Axis {
   // 조정하면 결과가 실제로 어떻게 달라지는지" 구체적 예시. generatePrompt의
   // 실제 분기 로직과 일치해야 한다(지어낸 효과 아님).
   hint?: string
+  // true면 페이지 진입 시 options[0]으로 자동 채우지 않는다(AI사진생성의
+  // 가로세로비율처럼 "기본값 없음"이 명시적 스펙인 축 전용). 이 축이 비어있는
+  // 동안 ComparePage/MobileComparePage는 generatePrompt를 호출하지 않고
+  // refinedPrompt를 빈 문자열로 유지해, 복사·공유 버튼도 함께 비활성화된다.
+  noDefault?: boolean
 }
 
 export interface Category {

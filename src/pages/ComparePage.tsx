@@ -49,7 +49,9 @@ export function ComparePage({
     const detected = detectCategoryAxes(inputText, category)
     const init: Record<string, string> = {}
     category.axes.forEach((a) => {
-      init[a.id] = detected[a.id] ?? a.options[0]
+      // noDefault 축(AI사진생성 가로세로비율)은 options[0]으로 몰래 채우지
+      // 않고 빈 문자열로 남겨, 사용자가 직접 고르기 전까진 미선택 상태를 유지한다.
+      init[a.id] = detected[a.id] ?? (a.noDefault ? "" : a.options[0])
     })
     return init
   })
@@ -115,6 +117,17 @@ export function ComparePage({
       ax: Record<string, string>,
       highlightInfo?: { text: string; color: string },
     ) => {
+      // noDefault 축(AI사진생성 가로세로비율)이 아직 안 골라졌으면 완성된
+      // 프롬프트 자체를 만들지 않는다(prd/AI사진생성.md 축1 예외 규칙) —
+      // generatePrompt를 호출하면 photo.ts가 의도적으로 throw하므로, 그
+      // 전에 여기서 막고 refinedPrompt를 빈 채로 둔다.
+      const missingRequired = category.axes.some((a) => a.noDefault && !ax[a.id])
+      if (missingRequired) {
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        setIsRefining(false)
+        setRefinedPrompt("")
+        return
+      }
       setIsRefining(true)
       if (debounceRef.current) clearTimeout(debounceRef.current)
       debounceRef.current = setTimeout(() => {
@@ -839,6 +852,7 @@ export function ComparePage({
           {/* Copy button */}
           <button
             onClick={handleCopy}
+            disabled={!refinedPrompt}
             className="btn-arcade pulse-lime"
             style={{
               background: copySuccess ? INK : LIME,
@@ -848,7 +862,8 @@ export function ComparePage({
               padding: "12px 0",
               borderRadius: 10,
               border: "2.5px solid #111",
-              cursor: "pointer",
+              cursor: refinedPrompt ? "pointer" : "not-allowed",
+              opacity: refinedPrompt ? 1 : 0.45,
               width: "100%",
               fontFamily: "'Noto Sans KR', sans-serif",
               transition: "all 0.15s",
@@ -943,9 +958,10 @@ export function ComparePage({
               {SERVICES.map((s) => (
                 <a
                   key={s.name}
-                  href={s.url}
+                  href={refinedPrompt ? s.url : undefined}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-disabled={!refinedPrompt}
                   className="btn-arcade"
                   style={{
                     fontSize: 12,
@@ -962,6 +978,9 @@ export function ComparePage({
                     border: "2px solid #111",
                     boxShadow: "3px 3px 0 rgba(17,17,17,0.28)",
                     textAlign: "center",
+                    opacity: refinedPrompt ? 1 : 0.45,
+                    pointerEvents: refinedPrompt ? "auto" : "none",
+                    cursor: refinedPrompt ? "pointer" : "not-allowed",
                   }}
                   onMouseEnter={(e) => {
                     ;(e.currentTarget as HTMLElement).style.background = LIME

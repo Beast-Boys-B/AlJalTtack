@@ -63,7 +63,9 @@ export function MobileComparePage({
     const detected = detectCategoryAxes(inputText, category)
     const init: Record<string, string> = {}
     category.axes.forEach((a) => {
-      init[a.id] = detected[a.id] ?? a.options[0]
+      // noDefault 축(AI사진생성 가로세로비율)은 options[0]으로 몰래 채우지
+      // 않고 빈 문자열로 남겨, 사용자가 직접 고르기 전까진 미선택 상태를 유지한다.
+      init[a.id] = detected[a.id] ?? (a.noDefault ? "" : a.options[0])
     })
     return init
   })
@@ -160,6 +162,17 @@ export function MobileComparePage({
       ax: Record<string, string>,
       highlightInfo?: { text: string; color: string },
     ) => {
+      // noDefault 축(AI사진생성 가로세로비율)이 아직 안 골라졌으면 완성된
+      // 프롬프트 자체를 만들지 않는다(prd/AI사진생성.md 축1 예외 규칙) —
+      // generatePrompt를 호출하면 photo.ts가 의도적으로 throw하므로, 그
+      // 전에 여기서 막고 refinedPrompt를 빈 채로 둔다.
+      const missingRequired = category.axes.some((a) => a.noDefault && !ax[a.id])
+      if (missingRequired) {
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        setIsRefining(false)
+        setRefinedPrompt("")
+        return
+      }
       setIsRefining(true)
       if (debounceRef.current) clearTimeout(debounceRef.current)
       debounceRef.current = setTimeout(() => {
@@ -393,6 +406,7 @@ export function MobileComparePage({
           {canShare && showStickyShare && (
             <button
               onClick={handleShare}
+              disabled={!refinedPrompt}
               className="btn-arcade"
               style={{
                 background: "#fff",
@@ -401,7 +415,8 @@ export function MobileComparePage({
                 padding: "6px 10px",
                 borderRadius: 8,
                 border: "2px solid #111",
-                cursor: "pointer",
+                cursor: refinedPrompt ? "pointer" : "not-allowed",
+                opacity: refinedPrompt ? 1 : 0.45,
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -431,6 +446,7 @@ export function MobileComparePage({
           {showStickyCopy && (
             <button
               onClick={handleCopy}
+              disabled={!refinedPrompt}
               className="btn-arcade"
               style={{
                 background: copySuccess ? LIME : "#fff",
@@ -438,8 +454,9 @@ export function MobileComparePage({
                 fontWeight: 800,
                 padding: "6px 10px",
                 borderRadius: 8,
+                cursor: refinedPrompt ? "pointer" : "not-allowed",
+                opacity: refinedPrompt ? 1 : 0.45,
                 border: "2px solid #111",
-                cursor: "pointer",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -630,6 +647,7 @@ export function MobileComparePage({
                 <button
                   ref={shareBtnRef}
                   onClick={handleShare}
+                  disabled={!refinedPrompt}
                   className="btn-arcade"
                   style={{
                     background: "#fff",
@@ -638,7 +656,8 @@ export function MobileComparePage({
                     padding: "5px 10px",
                     borderRadius: 6,
                     border: "1.5px solid #111",
-                    cursor: "pointer",
+                    cursor: refinedPrompt ? "pointer" : "not-allowed",
+                    opacity: refinedPrompt ? 1 : 0.45,
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -671,6 +690,7 @@ export function MobileComparePage({
               <button
                 ref={copyBtnRef}
                 onClick={handleCopy}
+                disabled={!refinedPrompt}
                 className="btn-arcade"
                 style={{
                   background: copySuccess ? LIME : "#fff",
@@ -679,7 +699,8 @@ export function MobileComparePage({
                   padding: "5px 10px",
                   borderRadius: 6,
                   border: "1.5px solid #111",
-                  cursor: "pointer",
+                  cursor: refinedPrompt ? "pointer" : "not-allowed",
+                  opacity: refinedPrompt ? 1 : 0.45,
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -995,7 +1016,8 @@ export function MobileComparePage({
             {SERVICES.map((s) => (
               <a
                 key={s.name}
-                href={s.url}
+                href={refinedPrompt ? s.url : undefined}
+                aria-disabled={!refinedPrompt}
                 className="btn-arcade"
                 style={{
                   fontSize: 12,
@@ -1010,6 +1032,8 @@ export function MobileComparePage({
                   justifyContent: "center",
                   border: "2px solid #111",
                   textAlign: "center",
+                  opacity: refinedPrompt ? 1 : 0.45,
+                  pointerEvents: refinedPrompt ? "auto" : "none",
                 }}
               >
                 {s.name} ↗
