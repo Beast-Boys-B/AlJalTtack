@@ -5,6 +5,12 @@
 
 import type { Category, FixedRule } from "./types"
 
+// prd/AI사진생성.md > 축 1 — 가로세로비율: 표시 순서 그대로 4지선다, 원문
+// 텍스트에서 키워드로 감지하지 않는 유일한 축(항상 사용자가 세부 조정에서
+// 직접 클릭). 그래서 이 배열은 detectAxes에서 전혀 참조되지 않는다 — 참조하는
+// 순간 자동감지가 생기는 셈이라 의도적으로 분리해 둔다.
+const ASPECT_RATIO_OPTIONS = ["기본(3:4)", "와이드스크린(16:9)", "가로(4:3)", "정사각형(1:1)"] as const
+
 export const category: Category = {
   id: "photo",
   name: "AI사진생성",
@@ -14,6 +20,12 @@ export const category: Category = {
   placeholder: "파란 하늘 아래 카페에 앉아 있는 고양이를 그려줘",
   example: "노을 지는 바닷가에서 산책하는 사람의 실루엣",
   axes: [
+    {
+      id: "aspectRatio",
+      label: "가로세로비율",
+      options: [...ASPECT_RATIO_OPTIONS],
+      hint: "이 축은 원문에서 자동으로 감지되지 않아요 — 항상 직접 클릭해서 골라야 해요.",
+    },
     {
       id: "style",
       label: "스타일",
@@ -208,11 +220,28 @@ export function detectAxes(text: string): Record<string, string> {
   }
 }
 
-// prd/AI사진생성.md > 태그 조립 원칙: 각 축(스타일/피사체/구도)에서 감지된
-// 신호 1개씩만 태그로 변환되므로, 결과는 항상 정확히 3개의 키워드로
-// 고정된다. 조립 형식도 다른 4개 카테고리(역할지정형 문장)와 달리
-// "[사용자 원문], tag1, tag2, tag3" 형태다.
+// prd/AI사진생성.md > 태그 조립 원칙: 가로세로비율(사용자 선택값) 1개 +
+// 스타일/피사체/구도 각 축에서 감지된(또는 기본값) 신호 1개씩, 총 4개의
+// 태그가 항상 이 순서로 조립된다. 조립 형식도 다른 4개 카테고리(역할지정형
+// 문장)와 달리 "[사용자 원문], tag1, tag2, tag3, tag4" 형태다.
 export function generatePrompt(text: string, axes: Record<string, string>): string {
+  // 축1 — 가로세로비율은 자동감지가 없고(prd 축1), "기본값 없음"이 명시적
+  // 규칙이다. 다른 3개 축과 달리 감지 실패 시 1번째 옵션으로 자동 채워지는
+  // 게 아니라, 사용자가 직접 고르기 전까지는 완성된 프롬프트 자체를 만들지
+  // 않는 것이 스키마상 올바른 동작이다(prd: "이 축에 값이 선택되기 전까지는
+  // 완성된 프롬프트 자체를 만들지 않는다"). 스키마는 호출부(App.tsx 등)가
+  // 이 축에 실제 사용자 선택값이 있을 때만 generatePrompt를 호출해야 한다고
+  // 명시하므로("애초에 기본값으로 삼을 값이 없기 때문"), 여기서 1번째
+  // 옵션으로 조용히 폴백하는 것은 스키마 위반이다 — 대신 잘못된(또는 너무
+  // 이른) 호출을 침묵 속에 묻지 않도록 명시적으로 에러를 던진다.
+  const manualAspectRatio = axes["aspectRatio"]
+  if (!(ASPECT_RATIO_OPTIONS as readonly string[]).includes(manualAspectRatio)) {
+    throw new Error(
+      "generatePrompt(photo): aspectRatio가 아직 선택되지 않았습니다 — 이 축은 기본값이 없으므로(prd/AI사진생성.md 축1) 호출부는 사용자가 값을 직접 고른 뒤에만 이 함수를 호출해야 합니다.",
+    )
+  }
+  const aspectRatio: string = manualAspectRatio
+
   const manualStyle = axes["style"]
   const style: "left" | "right" =
     manualStyle === STYLE_LABEL.right ? "right" : manualStyle === STYLE_LABEL.left ? "left" : detectStyle(text)
@@ -239,7 +268,7 @@ export function generatePrompt(text: string, axes: Record<string, string>): stri
   // 축 옵션 라벨 텍스트(예: "사진 같은 현실적")를 태그로 사용한다 — 스키마에
   // 없는 영문 키워드 매핑을 임의로 지어내지 않기 위함이다. 이미지 생성 AI에
   // 더 적합한 구체적 태그 문구가 정해지면 이 매핑만 교체하면 된다.
-  const tags = [STYLE_LABEL[style], SUBJECT_LABEL[subject], FRAMING_LABEL[framing]]
+  const tags = [aspectRatio, STYLE_LABEL[style], SUBJECT_LABEL[subject], FRAMING_LABEL[framing]]
 
   return `${text}, ${tags.join(", ")}`
 }
