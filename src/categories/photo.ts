@@ -128,8 +128,8 @@ function lastSignalIndex(text: string, nounRoots: string[], compoundPhrases: str
 // 신호를 우선 채택. 기본값: 좌(사진 같은 현실적).
 // ---------------------------------------------------------------------------
 
-const STYLE_LEFT_NOUN = ["사진", "현실적", "포토리얼", "실제", "사실적"]
-const STYLE_LEFT_COMPOUND = ["3D 렌더링"]
+const STYLE_LEFT_NOUN = ["사진", "현실적", "포토리얼", "실제", "사실적", "실사", "리얼", "극사실", "DSLR"]
+const STYLE_LEFT_COMPOUND = ["3D 렌더링", "필름 사진", "스냅 사진", "다큐멘터리 사진"]
 const STYLE_RIGHT_NOUN = [
   "일러스트",
   "만화",
@@ -142,7 +142,14 @@ const STYLE_RIGHT_NOUN = [
   "스타일라이즈",
   "애니메이션",
   "수채화",
+  "유화",
+  "수묵화",
+  "픽셀아트",
+  "웹툰",
+  "스케치",
+  "벡터",
 ]
+const STYLE_RIGHT_COMPOUND = ["지브리풍", "디즈니풍", "픽사 스타일"]
 
 const STYLE_LABEL = {
   left: "사진 같은 현실적",
@@ -151,7 +158,7 @@ const STYLE_LABEL = {
 
 function detectStyle(text: string): "left" | "right" {
   const leftIdx = lastSignalIndex(text, STYLE_LEFT_NOUN, STYLE_LEFT_COMPOUND)
-  const rightIdx = lastSignalIndex(text, STYLE_RIGHT_NOUN)
+  const rightIdx = lastSignalIndex(text, STYLE_RIGHT_NOUN, STYLE_RIGHT_COMPOUND)
   if (leftIdx === -1 && rightIdx === -1) return "left" // 기본값: 좌
   return rightIdx > leftIdx ? "right" : "left"
 }
@@ -161,7 +168,21 @@ function detectStyle(text: string): "left" | "right" {
 // 등장한 신호를 우선 채택. 기본값: 좌(인물 중심).
 // ---------------------------------------------------------------------------
 
-const SUBJECT_LEFT_NOUN = ["사람", "인물", "초상화"]
+const SUBJECT_LEFT_NOUN = [
+  "사람",
+  "인물",
+  "초상화",
+  "셀카",
+  "셀피",
+  "얼굴",
+  "전신",
+  "여자",
+  "남자",
+  "어른",
+  "소년",
+  "소녀",
+  "노인",
+]
 const SUBJECT_LEFT_COMPOUND = [
   "인물 사진",
   "사람 사진",
@@ -170,6 +191,14 @@ const SUBJECT_LEFT_COMPOUND = [
   "인물 포즈",
   "패션모델",
   "모델 사진",
+  "여성 모델",
+  "남성 모델",
+  "커플 사진",
+  "가족 사진",
+  "웨딩 사진",
+  "아이 사진",
+  "어린이 사진",
+  "아기 사진",
 ]
 const SUBJECT_RIGHT_NOUN = [
   "풍경",
@@ -184,6 +213,18 @@ const SUBJECT_RIGHT_NOUN = [
   "바다",
   "도시",
   "음식",
+  "나무",
+  "우주",
+  "자동차",
+  "커피",
+  "케이크",
+  "인테리어",
+  "하늘",
+  "설산",
+  "산맥",
+  "야경",
+  "꽃병",
+  "오토바이",
 ]
 // prd/AI사진생성.md > 축3 매칭 참고: "자연"은 명사 어근으로 매칭하되,
 // "자연스럽-"으로 이어지는 활용형(자연스럽게/자연스러운 등)은 우 신호에서
@@ -218,9 +259,23 @@ function detectSubject(text: string): "left" | "right" {
 // 등장한 신호를 우선 채택. 기본값: 우(광활한 뷰).
 // ---------------------------------------------------------------------------
 
-const FRAMING_LEFT_NOUN = ["클로즈업", "확대", "세부", "근접", "헤드샷", "디테일"]
-const FRAMING_RIGHT_NOUN = ["멀리서", "광각", "전경", "넓게", "드넓은", "광활"]
-const FRAMING_RIGHT_COMPOUND = ["전체 샷", "배경 포함", "와이드 샷"]
+const FRAMING_LEFT_NOUN = ["클로즈업", "확대", "세부", "근접", "헤드샷", "디테일", "매크로", "클로즈샷", "상반신", "접사"]
+const FRAMING_LEFT_COMPOUND = ["얼굴 클로즈업", "익스트림 클로즈업", "상반신 샷"]
+const FRAMING_RIGHT_NOUN = [
+  "멀리서",
+  "광각",
+  "전경",
+  "넓게",
+  "드넓은",
+  "광활",
+  "파노라마",
+  "원경",
+  "롱샷",
+  "풀샷",
+  "버드아이뷰",
+  "항공샷",
+]
+const FRAMING_RIGHT_COMPOUND = ["전체 샷", "배경 포함", "와이드 샷", "항공 샷", "전신 샷"]
 
 const FRAMING_LABEL = {
   left: "클로즈업",
@@ -228,7 +283,7 @@ const FRAMING_LABEL = {
 } as const
 
 function detectFraming(text: string): "left" | "right" {
-  const leftIdx = lastSignalIndex(text, FRAMING_LEFT_NOUN)
+  const leftIdx = lastSignalIndex(text, FRAMING_LEFT_NOUN, FRAMING_LEFT_COMPOUND)
   const rightIdx = lastSignalIndex(text, FRAMING_RIGHT_NOUN, FRAMING_RIGHT_COMPOUND)
   if (leftIdx === -1 && rightIdx === -1) return "right" // 기본값: 우
   return rightIdx > leftIdx ? "right" : "left"
