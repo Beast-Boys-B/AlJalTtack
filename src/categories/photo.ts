@@ -56,7 +56,7 @@ export const category: Category = {
     },
     {
       tag: "#음식",
-      example: "따뜻한김이 모락모락 나는 정갈한 일본식 라멘 한 그릇 4K 초고화질 사진",
+      example: "따뜻한김이 모락모락 나는 정갈한 일본식 라멘 음식 한 그릇 4K 초고화질 사진",
     },
     {
       tag: "#동물",
@@ -139,6 +139,8 @@ const STYLE_RIGHT_NOUN = [
   "판타지",
   "컨셉아트",
   "스타일라이즈",
+  "애니메이션",
+  "수채화",
 ]
 
 const STYLE_LABEL = {
