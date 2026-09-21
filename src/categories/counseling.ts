@@ -112,6 +112,7 @@ const AXIS1_DEFS: Record<Axis1Topic, Axis1Def> = {
     roots: [
       "남자친구",
       "여자친구",
+      "연인",
       "썸",
       "이별",
       "헤어",
