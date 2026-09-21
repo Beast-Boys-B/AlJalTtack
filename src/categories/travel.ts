@@ -181,13 +181,10 @@ const COMPANION_RIGHT: Pattern[] = [
   "단체로",
   "단체랑",
   "회사 워크숍",
-  "명이랑",
-  "명이서",
   "다같이",
-  "모두",
   "여러명",
   "부모님",
-  /\d+명(이|가|과|랑|하고|하는데|해서)/,
+  /\d+명(이|가|과|랑|하고|하는데|해서|이랑|이서|끼리)/,
 ]
 
 // 축3 — 여행 시점(단일선택, 겹침 예외): 좌=임박한 여행 / 우=고려 중
@@ -295,6 +292,21 @@ export function generatePrompt(
       : purposeInfoOn && !purposeScheduleOn
         ? "여행지 정보를 친절하게 알려주는 여행 가이드"
         : "여행지 정보 안내와 일정 설계를 함께 도와주는 여행 플래너"
+
+  // 하이라이트 매칭용 라벨: 세부 조정에서 고른 옵션 문자열이 프롬프트에 그대로
+  // 등장해야 ComparePage의 exact-substring 하이라이트가 동작한다(동행/시점과 동일 패턴).
+  const purposeLabel =
+    purposeInfoOn && purposeScheduleOn
+      ? PURPOSE_OPTIONS[2]
+      : purposeScheduleOn
+        ? PURPOSE_OPTIONS[1]
+        : PURPOSE_OPTIONS[0]
+  const styleLabel =
+    styleRelaxOn && styleActiveOn
+      ? STYLE_OPTIONS[2]
+      : styleActiveOn
+        ? STYLE_OPTIONS[1]
+        : STYLE_OPTIONS[0]
 
   const bullets: string[] = []
   if (purposeInfoOn) {
