@@ -112,6 +112,7 @@ const AXIS1_DEFS: Record<Axis1Topic, Axis1Def> = {
     roots: [
       "남자친구",
       "여자친구",
+      "연인",
       "썸",
       "이별",
       "헤어",
@@ -164,6 +165,8 @@ const AXIS1_DEFS: Record<Axis1Topic, Axis1Def> = {
       "자소서",
       "인턴",
       "진학",
+      "전공",
+      "적성",
     ],
     phrases: [],
   },
@@ -180,7 +183,7 @@ const AXIS1_DEFS: Record<Axis1Topic, Axis1Def> = {
     personaLabel: "부모님 모드",
     effect:
       "편안하고 다정한 말투를 사용하세요. 조건 없이 존재 자체를 인정하는 지지적인 화법을 사용하세요.",
-    roots: ["자존감", "자신감", "열등감", "자기혐오", "무기력"],
+    roots: ["자존감", "자신감", "열등감", "자기혐오", "무기력", "자책"],
     phrases: ["나 자신", "내가 부족한 것 같아"],
   },
 }
