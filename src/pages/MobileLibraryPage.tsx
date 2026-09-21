@@ -11,6 +11,7 @@ import {
   CATEGORY_COLORS,
   FIXED_RULES,
   generateRefinedPrompt,
+  detectCategoryAxes,
   type CategoryId,
 } from "../categories"
 import { playArcadeSound } from "../lib/sound"
@@ -88,12 +89,18 @@ export function MobileLibraryPage({
 
   const cat = CATEGORIES.find((c) => c.id === activeTab)!
   const catColor = CATEGORY_COLORS[activeTab]
+  const selectedItem = selectedIdx !== null ? cat.hashtags[selectedIdx] : null
+
+  // 선택된 예시 문구에서 실제로 축을 감지해야 한다 — 그냥 각 축의
+  // options[0]으로 고정해두면, 나중에 "예시로 시작하기"를 눌러 비교
+  // 화면으로 넘어갔을 때(거기선 detectCategoryAxes로 실제 감지) 미리보기와
+  // 다른 정제 결과가 나오는 버그가 생긴다.
   const defaultAxes: Record<string, string> = {}
+  const detected = selectedItem ? detectCategoryAxes(selectedItem.example, cat) : {}
   cat.axes.forEach((a) => {
-    defaultAxes[a.id] = a.options[0]
+    defaultAxes[a.id] = detected[a.id] ?? a.options[0]
   })
 
-  const selectedItem = selectedIdx !== null ? cat.hashtags[selectedIdx] : null
   const refinedPrompt = selectedItem
     ? generateRefinedPrompt(selectedItem.example, cat, defaultAxes)
     : ""
