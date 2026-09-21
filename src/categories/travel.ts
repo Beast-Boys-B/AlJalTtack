@@ -295,6 +295,7 @@ export function generatePrompt(
 
   // 하이라이트 매칭용 라벨: 세부 조정에서 고른 옵션 문자열이 프롬프트에 그대로
   // 등장해야 ComparePage의 exact-substring 하이라이트가 동작한다(동행/시점과 동일 패턴).
+  // 중복선택 축(목적/스타일)도 [축 이름] 라벨 줄로 원문을 그대로 남긴다.
   const purposeLabel =
     purposeInfoOn && purposeScheduleOn
       ? PURPOSE_OPTIONS[2]
@@ -330,17 +331,6 @@ export function generatePrompt(
   if (styleRelaxOn) bullets.push("여유롭게 쉴 수 있는 휴양 위주로 일정을 구성해 주세요.")
   if (styleActiveOn) bullets.push("다양한 액티비티와 체험 위주로 알차게 일정을 구성해 주세요.")
 
-  // 축 하이라이트는 선택된 옵션 문구가 결과 텍스트에 그대로 있어야 동작하므로,
-  // 중복선택 축(목적/스타일)도 [축 이름] 라벨 줄로 원문을 그대로 남긴다
-  // (동행/여행 시점과 동일한 방식).
-  const purposeLabel =
-    purposeInfoOn && purposeScheduleOn
-      ? PURPOSE_OPTIONS[2]
-      : purposeScheduleOn
-        ? PURPOSE_OPTIONS[1]
-        : PURPOSE_OPTIONS[0]
-  const styleLabel =
-    styleRelaxOn && styleActiveOn ? STYLE_OPTIONS[2] : styleActiveOn ? STYLE_OPTIONS[1] : STYLE_OPTIONS[0]
   const companionLabel = companionIsGroup ? COMPANION_OPTIONS[1] : COMPANION_OPTIONS[0]
   const timingLabel = timingIsImminent ? TIMING_OPTIONS[0] : TIMING_OPTIONS[1]
   const dest = destination ? `[목적지] ${destination}\n` : ""
